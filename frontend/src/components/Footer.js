@@ -24,10 +24,10 @@ function Footer() {
         <div className="footer-section social">
           <h3>Connect</h3>
           <div className="social-icons">
-            <a href="#" aria-label="Twitter"><FaTwitter /></a>
-            <a href="#" aria-label="GitHub"><FaGithub /></a>
-            <a href="#" aria-label="LinkedIn"><FaLinkedin /></a>
-            <a href="#" aria-label="Email"><FaEnvelope /></a>
+            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><FaTwitter /></a>
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><FaGithub /></a>
+            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><FaLinkedin /></a>
+            <a href="mailto:contact@campushub.com" aria-label="Email"><FaEnvelope /></a>
           </div>
         </div>
       </div>
