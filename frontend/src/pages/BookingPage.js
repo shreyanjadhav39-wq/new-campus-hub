@@ -1,0 +1,129 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaMoneyCheckAlt, FaCloudUploadAlt } from "react-icons/fa";
+import axios from "axios";
+import { API_BASE_URL } from "../config";
+import "../styles/dashboard.css"; // Reuse dashboard container styles
+
+function BookingPage() {
+  const navigate = useNavigate();
+  const [image, setImage] = useState(null);
+  const [event, setEvent] = useState(null);
+
+  useEffect(() => {
+    const selected = JSON.parse(localStorage.getItem("selectedEvent"));
+    if (!selected) {
+      alert("No event selected. Please choose an event from the home page.");
+      navigate("/");
+    } else {
+      setEvent(selected);
+    }
+  }, [navigate]);
+
+  const handleImage = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => setImage(reader.result);
+    if (file) reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async () => {
+    if (!image) {
+      alert("Please upload payment screenshot.");
+      return;
+    }
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (!currentUser) {
+      alert("Please login first");
+      return;
+    }
+
+    try {
+      const payload = {
+        studentId: currentUser._id,
+        studentName: currentUser.name,
+        eventId: event._id,
+        eventName: event.title || event.name,
+        clubId: event.clubName,
+        eventDate: event.date,
+        eventVenue: event.venue,
+        eventPrice: event.price,
+        screenshot: image
+      };
+
+      await axios.post(`${API_BASE_URL}/api/bookings`, payload);
+      alert("Booking Submitted Successfully 🚀");
+      // Remove mock storage saving
+    } catch (err) {
+      alert("Failed to submit booking");
+      console.error(err);
+    }
+  };
+
+  if (!event) return <h1>Loading...</h1>;
+
+  return (
+    <div className="dashboard-container">
+      <div className="dashboard-header" style={{ marginBottom: "20px" }}>
+        <div>
+          <h1 className="text-gradient">Complete Your Booking</h1>
+          <p>Secure your spot for the upcoming event.</p>
+        </div>
+      </div>
+
+      <div className="dashboard-grid">
+        <div className="dashboard-panel glass-panel">
+          <h2>Event Details</h2>
+          <div style={{ marginBottom: "20px" }}>
+            <h3 style={{ fontSize: "1.8rem", color: "var(--primary)", marginBottom: "10px" }}>{event.title || event.name}</h3>
+            <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}><strong>Venue:</strong> {event.venue}</p>
+            <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}><strong>Date:</strong> {event.date}</p>
+            <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}><strong>Price:</strong> ₹{event.price}</p>
+            <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}><strong>Seats Left:</strong> {event.seatsLeft !== undefined ? event.seatsLeft : event.seats}</p>
+          </div>
+          
+          <button 
+            className="btn-primary" 
+            onClick={() => window.open("https://vierp.in", "_blank")}
+            style={{ width: "100%", padding: "16px", marginTop: "10px" }}
+          >
+            <FaMoneyCheckAlt /> Pay via VIERP
+          </button>
+        </div>
+
+        <div className="dashboard-panel glass-panel">
+          <h2>Payment Verification</h2>
+          <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>
+            Please upload a screenshot of your successful transaction to secure your booking.
+          </p>
+
+          <div style={{ background: "rgba(0,0,0,0.2)", border: "2px dashed rgba(255,255,255,0.1)", borderRadius: "12px", padding: "30px", textAlign: "center", position: "relative", marginBottom: "20px" }}>
+            <input 
+              type="file" 
+              onChange={handleImage} 
+              style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
+            />
+            {!image ? (
+              <div>
+                <FaCloudUploadAlt style={{ fontSize: "3rem", color: "var(--primary)", marginBottom: "10px" }} />
+                <p>Click or drag image to upload</p>
+              </div>
+            ) : (
+              <img src={image} alt="preview" style={{ width: "100%", maxHeight: "200px", objectFit: "contain", borderRadius: "8px" }} />
+            )}
+          </div>
+
+          <button 
+            className="btn-primary" 
+            onClick={handleSubmit}
+            style={{ width: "100%", padding: "16px", background: "var(--success)" }}
+          >
+            Submit Proof & Book
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default BookingPage;
