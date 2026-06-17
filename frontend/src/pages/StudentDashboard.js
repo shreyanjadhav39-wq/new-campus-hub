@@ -12,6 +12,37 @@ function StudentDashboard() {
   const [bookings, setBookings] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [sortBy, setSortBy] = useState("dateDesc");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  const getSortedBookings = () => {
+    let list = [...bookings];
+    
+    // Apply status filter
+    if (filterStatus !== "all") {
+      list = list.filter(b => b.status.toLowerCase() === filterStatus.toLowerCase());
+    }
+
+    // Apply sorting
+    list.sort((a, b) => {
+      if (sortBy === "dateDesc") {
+        return new Date(b.eventDate || 0) - new Date(a.eventDate || 0);
+      } else if (sortBy === "dateAsc") {
+        return new Date(a.eventDate || 0) - new Date(b.eventDate || 0);
+      } else if (sortBy === "nameAsc") {
+        return (a.eventName || "").localeCompare(b.eventName || "");
+      } else if (sortBy === "nameDesc") {
+        return (b.eventName || "").localeCompare(a.eventName || "");
+      } else if (sortBy === "priceAsc") {
+        return (a.eventPrice || 0) - (b.eventPrice || 0);
+      } else if (sortBy === "priceDesc") {
+        return (b.eventPrice || 0) - (a.eventPrice || 0);
+      }
+      return 0;
+    });
+
+    return list;
+  };
 
   useEffect(() => {
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
@@ -47,51 +78,14 @@ function StudentDashboard() {
 
   const handleDownloadReceipt = (b) => {
     const printWindow = window.open("", "_blank");
-    const verificationId = `CH-${b._id.slice(-6).toUpperCase()}`;
+    const verificationId = b.bookingId || `CH-${b._id.slice(-6).toUpperCase()}`;
     const priceStr = b.eventPrice !== undefined ? `₹${b.eventPrice}` : "Paid/Free";
     const dateStr = b.eventDate || "TBA";
     const venueStr = b.eventVenue || "TBA";
-    
-    const qrCodeSvg = `
-      <svg width="120" height="120" viewBox="0 0 29 29" style="background:#fff; padding:6px; border:1px solid #eaeaea; border-radius:8px;">
-        <rect x="0" y="0" width="7" height="7" fill="#000"/>
-        <rect x="1" y="1" width="5" height="5" fill="#fff"/>
-        <rect x="2" y="2" width="3" height="3" fill="#000"/>
-        
-        <rect x="22" y="0" width="7" height="7" fill="#000"/>
-        <rect x="23" y="1" width="5" height="5" fill="#fff"/>
-        <rect x="24" y="2" width="3" height="3" fill="#000"/>
-        
-        <rect x="0" y="22" width="7" height="7" fill="#000"/>
-        <rect x="1" y="23" width="5" height="5" fill="#fff"/>
-        <rect x="2" y="24" width="3" height="3" fill="#000"/>
-        
-        <rect x="9" y="1" width="2" height="1" fill="#000"/>
-        <rect x="13" y="2" width="1" height="3" fill="#000"/>
-        <rect x="17" y="0" width="3" height="1" fill="#000"/>
-        <rect x="9" y="5" width="3" height="2" fill="#000"/>
-        <rect x="15" y="6" width="2" height="1" fill="#000"/>
-        
-        <rect x="22" y="9" width="1" height="4" fill="#000"/>
-        <rect x="25" y="11" width="3" height="2" fill="#000"/>
-        <rect x="27" y="15" width="2" height="3" fill="#000"/>
-        
-        <rect x="9" y="10" width="4" height="4" fill="#000"/>
-        <rect x="10" y="11" width="2" height="2" fill="#fff"/>
-        
-        <rect x="15" y="10" width="3" height="3" fill="#000"/>
-        <rect x="16" y="15" width="4" height="2" fill="#000"/>
-        <rect x="12" y="18" width="2" height="3" fill="#000"/>
-        
-        <rect x="1" y="15" width="4" height="1" fill="#000"/>
-        <rect x="5" y="17" width="2" height="3" fill="#000"/>
-        <rect x="0" y="19" width="3" height="2" fill="#000"/>
-        
-        <rect x="22" y="22" width="2" height="2" fill="#000"/>
-        <rect x="26" y="24" width="3" height="3" fill="#000"/>
-        <rect x="24" y="27" width="2" height="1" fill="#000"/>
-      </svg>
-    `;
+    const collegeStr = b.collegeName || "N/A";
+    const emailStr = b.studentEmail || "N/A";
+    const mobileStr = b.studentMobile || "N/A";
+    const rollStr = b.studentRollNumber || "N/A";
 
     printWindow.document.write(`
       <html>
@@ -181,20 +175,6 @@ function StudentDashboard() {
               color: #3b82f6;
               font-weight: 700;
             }
-            .qr-section {
-              text-align: center;
-              background: #f8fafc;
-              border-radius: 16px;
-              padding: 20px;
-              margin-top: 24px;
-              border: 1px solid #e2e8f0;
-            }
-            .qr-section p {
-              margin: 8px 0 0 0;
-              font-size: 0.8rem;
-              color: #64748b;
-              font-weight: 600;
-            }
             .footer-note {
               text-align: center;
               font-size: 0.75rem;
@@ -237,16 +217,28 @@ function StudentDashboard() {
             
             <div class="info-grid">
               <div class="info-row">
-                <span class="info-label">Receipt ID</span>
-                <span class="info-value" style="font-family: monospace; font-size: 0.95rem;">${verificationId}</span>
+                <span class="info-label">Booking ID</span>
+                <span class="info-value" style="font-family: monospace; font-size: 0.95rem; font-weight: bold;">${verificationId}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">College Name</span>
+                <span class="info-value" style="color: #3b82f6;">${collegeStr}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Student Name</span>
                 <span class="info-value">${b.studentName}</span>
               </div>
               <div class="info-row">
-                <span class="info-label">Student ID</span>
-                <span class="info-value">${b.studentId}</span>
+                <span class="info-label">Roll Number</span>
+                <span class="info-value">${rollStr}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Mobile Number</span>
+                <span class="info-value">${mobileStr}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Email Address</span>
+                <span class="info-value">${emailStr}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Event Name</span>
@@ -264,11 +256,6 @@ function StudentDashboard() {
                 <span class="info-label" style="font-size: 1.05rem; font-weight: bold; color: #0f172a;">Amount Paid</span>
                 <span class="info-value" style="font-size: 1.25rem; font-weight: 800; color: #15803d;">${priceStr}</span>
               </div>
-            </div>
-            
-            <div class="qr-section">
-              ${qrCodeSvg}
-              <p>Scan to verify booking validity</p>
             </div>
             
             <p class="footer-note">
@@ -332,31 +319,68 @@ function StudentDashboard() {
       <div className="dashboard-grid">
         <div className="dashboard-panel glass-panel">
           <h2>My Bookings</h2>
-          {bookings.length === 0 ? (
+          {bookings.length > 0 && (
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "16px" }}>
+              <div style={{ flex: 1, minWidth: "140px" }}>
+                <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Sort By</label>
+                <select 
+                  value={sortBy} 
+                  onChange={(e) => setSortBy(e.target.value)} 
+                  style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "var(--text-main)", outline: "none" }}
+                >
+                  <option value="dateDesc">Event Date (Newest First)</option>
+                  <option value="dateAsc">Event Date (Oldest First)</option>
+                  <option value="nameAsc">Event Name (A-Z)</option>
+                  <option value="nameDesc">Event Name (Z-A)</option>
+                  <option value="priceAsc">Price (Low to High)</option>
+                  <option value="priceDesc">Price (High to Low)</option>
+                </select>
+              </div>
+              <div style={{ flex: 1, minWidth: "140px" }}>
+                <label style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "block", marginBottom: "4px" }}>Filter Status</label>
+                <select 
+                  value={filterStatus} 
+                  onChange={(e) => setFilterStatus(e.target.value)} 
+                  style={{ width: "100%", padding: "8px 12px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "var(--text-main)", outline: "none" }}
+                >
+                  <option value="all">All Bookings</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+          )}
+          {getSortedBookings().length === 0 ? (
             <div className="empty-state">
               <FaRegCalendarTimes />
-              <p>You haven't booked any events yet.</p>
-              <button className="btn-primary" style={{ marginTop: "20px" }} onClick={() => navigate("/")}>
-                Browse Events
-              </button>
+              <p>{bookings.length === 0 ? "You haven't booked any events yet." : "No bookings match the selected status filter."}</p>
+              {bookings.length === 0 && (
+                <button className="btn-primary" style={{ marginTop: "20px" }} onClick={() => navigate("/")}>
+                  Browse Events
+                </button>
+              )}
             </div>
           ) : (
             <div>
-              {bookings.map(b => (
+              {getSortedBookings().map(b => (
                 <div key={b._id} style={{ background: "rgba(255,255,255,0.05)", padding: "15px", borderRadius: "8px", marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
                     <h3 style={{ color: "var(--primary)" }}>{b.eventName}</h3>
+                    {b.bookingId && <p style={{ fontSize: "0.8rem", color: "var(--accent)", margin: "2px 0" }}>ID: {b.bookingId}</p>}
                     <p style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>Status: <span style={{ color: b.status === "Approved" ? "var(--success)" : b.status === "Rejected" ? "var(--danger)" : "orange", fontWeight: "bold" }}>{b.status}</span></p>
                   </div>
-                  {b.status === "Approved" && (
-                    <button 
-                      className="btn-secondary" 
-                      style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "0.85rem", background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)" }}
-                      onClick={() => handleDownloadReceipt(b)}
-                    >
-                      <FaDownload /> Receipt
-                    </button>
-                  )}
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    {b.status === "Approved" && (
+                      <button 
+                        className="btn-secondary" 
+                        style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "0.85rem", background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)" }}
+                        onClick={() => handleDownloadReceipt(b)}
+                      >
+                        <FaDownload /> Receipt
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

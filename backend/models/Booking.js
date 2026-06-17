@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema({
+  bookingId: {
+    type: String,
+    required: false
+  },
   studentId: {
     type: String,
     required: true
@@ -8,6 +12,22 @@ const bookingSchema = new mongoose.Schema({
   studentName: {
     type: String,
     required: true
+  },
+  studentEmail: {
+    type: String,
+    required: true
+  },
+  studentMobile: {
+    type: String,
+    required: true
+  },
+  studentRollNumber: {
+    type: String,
+    required: true
+  },
+  collegeName: {
+    type: String,
+    required: false
   },
   eventId: {
     type: String,

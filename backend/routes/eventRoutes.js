@@ -26,7 +26,7 @@ router.get("/club/:clubName", async (req, res) => {
 // POST a new event
 router.post("/", async (req, res) => {
   try {
-    const { title, venue, date, price, seats, createdBy, clubName, category } = req.body;
+    const { title, venue, date, price, seats, createdBy, clubName, collegeName, category } = req.body;
     
     const newEvent = new Event({
       title,
@@ -37,6 +37,7 @@ router.post("/", async (req, res) => {
       seatsLeft: seats,
       createdBy,
       clubName,
+      collegeName,
       category: category || "General"
     });
 
@@ -233,6 +234,21 @@ router.get("/recommendations/:studentId", async (req, res) => {
     }
 
     res.json(scoredRecommendations.slice(0, 4));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE an event and its bookings
+router.delete("/:id", async (req, res) => {
+  try {
+    const event = await Event.findByIdAndDelete(req.params.id);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+    // Also delete all bookings for this event
+    await Booking.deleteMany({ eventId: req.params.id });
+    res.json({ message: "Event and associated bookings deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -6,17 +6,43 @@ const Event = require("../models/Event");
 // POST a new booking
 router.post("/", async (req, res) => {
   try {
-    const { studentId, studentName, eventId, eventName, clubId, screenshot, eventPrice, eventDate, eventVenue } = req.body;
+    const { studentId, studentName, studentEmail, studentMobile, studentRollNumber, collegeName, eventId, eventName, clubId, screenshot, eventPrice, eventDate, eventVenue } = req.body;
     
     // Explicit validation to prevent undefined/broken booking entries
-    if (!studentId || !studentName || !eventId || !eventName || !clubId || !screenshot) {
-      return res.status(400).json({ error: "Missing required booking details (student, event, club, or payment proof screenshot)." });
+    if (!studentId || !studentName || !studentEmail || !studentMobile || !studentRollNumber || !eventId || !eventName || !clubId || !screenshot) {
+      return res.status(400).json({ error: "Missing required booking details (student info, event, club, or payment proof screenshot)." });
     }
+
+    // Generate custom booking ID: 2 uppercase alphabetic/numeric chars of event name + sequential numbers
+    let prefix = "EV";
+    if (eventName) {
+      const cleanName = eventName.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      if (cleanName.length >= 2) {
+        prefix = cleanName.substring(0, 2);
+      } else if (cleanName.length === 1) {
+        prefix = cleanName + "X";
+      }
+    }
+
+    const lastBooking = await Booking.findOne().sort({ _id: -1 });
+    let sequenceNum = 1001;
+    if (lastBooking && lastBooking.bookingId) {
+      const match = lastBooking.bookingId.match(/\d+$/);
+      if (match) {
+        sequenceNum = parseInt(match[0], 10) + 1;
+      }
+    }
+    const bookingId = `${prefix}${sequenceNum}`;
 
     // Create the booking
     const newBooking = new Booking({
+      bookingId,
       studentId,
       studentName,
+      studentEmail,
+      studentMobile,
+      studentRollNumber,
+      collegeName,
       eventId,
       eventName,
       clubId,
@@ -79,6 +105,27 @@ router.patch("/:id/status", async (req, res) => {
     }
 
     res.json(booking);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE a booking
+router.delete("/:id", async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // If booking was approved/pending, and we delete it, should we increment seatsLeft back?
+    // In real-time production, yes, let's restore seats if status was not Rejected
+    if (booking.status !== "Rejected") {
+      await Event.findByIdAndUpdate(booking.eventId, { $inc: { seatsLeft: 1 } });
+    }
+
+    await Booking.findByIdAndDelete(req.params.id);
+    res.json({ message: "Booking deleted/cancelled successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

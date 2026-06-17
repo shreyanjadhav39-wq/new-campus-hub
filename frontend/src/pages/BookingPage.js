@@ -9,6 +9,9 @@ function BookingPage() {
   const navigate = useNavigate();
   const [image, setImage] = useState(null);
   const [event, setEvent] = useState(null);
+  const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [rollNumber, setRollNumber] = useState("");
 
   useEffect(() => {
     const selected = JSON.parse(localStorage.getItem("selectedEvent"));
@@ -17,6 +20,13 @@ function BookingPage() {
       navigate("/");
     } else {
       setEvent(selected);
+    }
+
+    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    if (currentUser) {
+      setEmail(currentUser.email || "");
+      setMobile(currentUser.mobileNumber || "");
+      setRollNumber(currentUser.rollNumber || "");
     }
   }, [navigate]);
 
@@ -28,6 +38,10 @@ function BookingPage() {
   };
 
   const handleSubmit = async () => {
+    if (!email || !mobile || !rollNumber) {
+      alert("Please fill in all student information fields.");
+      return;
+    }
     if (!image) {
       alert("Please upload payment screenshot.");
       return;
@@ -42,6 +56,10 @@ function BookingPage() {
       const payload = {
         studentId: currentUser._id,
         studentName: currentUser.name,
+        studentEmail: email,
+        studentMobile: mobile,
+        studentRollNumber: rollNumber,
+        collegeName: event.collegeName || "",
         eventId: event._id,
         eventName: event.title || event.name,
         clubId: event.clubName,
@@ -53,7 +71,7 @@ function BookingPage() {
 
       await axios.post(`${API_BASE_URL}/api/bookings`, payload);
       alert("Booking Submitted Successfully 🚀");
-      // Remove mock storage saving
+      navigate("/student-dashboard");
     } catch (err) {
       alert("Failed to submit booking");
       console.error(err);
@@ -76,6 +94,7 @@ function BookingPage() {
           <h2>Event Details</h2>
           <div style={{ marginBottom: "20px" }}>
             <h3 style={{ fontSize: "1.8rem", color: "var(--primary)", marginBottom: "10px" }}>{event.title || event.name}</h3>
+            {event.collegeName && <p style={{ fontSize: "1.1rem", marginBottom: "8px", color: "var(--accent)" }}><strong>College:</strong> {event.collegeName}</p>}
             <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}><strong>Venue:</strong> {event.venue}</p>
             <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}><strong>Date:</strong> {event.date}</p>
             <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}><strong>Price:</strong> ₹{event.price}</p>
@@ -92,6 +111,22 @@ function BookingPage() {
         </div>
 
         <div className="dashboard-panel glass-panel">
+          <h2>Student Information</h2>
+          <div className="auth-form" style={{ background: "rgba(0,0,0,0.1)", padding: "20px", borderRadius: "10px", marginBottom: "20px" }}>
+            <div className="form-group">
+              <label>Email Address</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="name@university.edu" />
+            </div>
+            <div className="form-group">
+              <label>Mobile Number</label>
+              <input type="text" value={mobile} onChange={e => setMobile(e.target.value)} required placeholder="e.g. 9876543210" />
+            </div>
+            <div className="form-group">
+              <label>Roll Number</label>
+              <input type="text" value={rollNumber} onChange={e => setRollNumber(e.target.value)} required placeholder="e.g. CS2026101" />
+            </div>
+          </div>
+
           <h2>Payment Verification</h2>
           <p style={{ color: "var(--text-muted)", marginBottom: "20px" }}>
             Please upload a screenshot of your successful transaction to secure your booking.

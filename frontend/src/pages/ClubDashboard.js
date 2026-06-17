@@ -90,6 +90,7 @@ function ClubDashboard() {
         seats: Number(seats), 
         createdBy: user._id, 
         clubName: user.clubName,
+        collegeName: user.collegeName || "",
         category
       };
       await axios.post(`${API_BASE_URL}/api/events`, payload);
@@ -121,6 +122,35 @@ function ClubDashboard() {
     }
   };
 
+  const handleDeleteEvent = async (eventId) => {
+    if (window.confirm("Are you sure you want to delete this event? This will also delete all associated bookings!")) {
+      try {
+        await axios.delete(`${API_BASE_URL}/api/events/${eventId}`);
+        alert("Event deleted successfully!");
+        fetchEvents(user.clubName);
+        fetchBookings(user.clubName);
+      } catch (err) {
+        alert("Failed to delete event");
+        console.error(err);
+      }
+    }
+  };
+
+  const handleDeleteBooking = async (bookingId) => {
+    if (window.confirm("Are you sure you want to delete this booking?")) {
+      try {
+        await axios.delete(`${API_BASE_URL}/api/bookings/${bookingId}`);
+        alert("Booking deleted successfully!");
+        setSelectedBooking(null);
+        fetchBookings(user.clubName);
+        fetchEvents(user.clubName);
+      } catch (err) {
+        alert("Failed to delete booking");
+        console.error(err);
+      }
+    }
+  };
+
   const handleExportToCSV = () => {
     const approvedBookings = bookings.filter(b => b.status === "Approved");
     if (approvedBookings.length === 0) {
@@ -128,11 +158,13 @@ function ClubDashboard() {
       return;
     }
 
-    const headers = ["Booking ID", "Student Name", "Student ID", "Event Name", "Event Date", "Venue", "Price (INR)", "Status"];
+    const headers = ["Booking ID", "Student Name", "Roll Number", "Mobile", "Email", "Event Name", "Event Date", "Venue", "Price (INR)", "Status"];
     const rows = approvedBookings.map(b => [
-      b._id,
+      b.bookingId || b._id,
       b.studentName,
-      b.studentId,
+      b.studentRollNumber || "N/A",
+      b.studentMobile || "N/A",
+      b.studentEmail || "N/A",
       b.eventName,
       b.eventDate || "TBA",
       b.eventVenue || "TBA",
@@ -170,6 +202,7 @@ function ClubDashboard() {
       <div className="dashboard-header">
         <div>
           <h1>{user.clubName || user.name || "Club Portal"}</h1>
+          {user.collegeName && <p style={{ fontSize: "1.2rem", color: "var(--primary)", marginTop: "4px", marginBottom: "8px" }}>🏫 {user.collegeName}</p>}
           <p>Manage your events, members, and bookings.</p>
         </div>
         <button className="btn-secondary" onClick={handleLogout}>
@@ -305,10 +338,19 @@ function ClubDashboard() {
           ) : (
             <div>
               {events.map(ev => (
-                <div key={ev._id} style={{ background: "rgba(255,255,255,0.05)", padding: "15px", borderRadius: "8px", marginBottom: "10px" }}>
-                  <h3 style={{ color: "var(--primary)", marginTop: 0 }}>{ev.title}</h3>
-                  <p style={{ margin: "4px 0" }}>Date: {ev.date} | Venue: {ev.venue}</p>
-                  <p style={{ margin: "4px 0", color: "var(--text-muted)", fontSize: "0.9rem" }}>Price: ₹{ev.price} | Seats Left: <strong>{ev.seatsLeft}/{ev.seats}</strong></p>
+                <div key={ev._id} style={{ background: "rgba(255,255,255,0.05)", padding: "15px", borderRadius: "8px", marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3 style={{ color: "var(--primary)", marginTop: 0, marginBottom: "6px" }}>{ev.title}</h3>
+                    <p style={{ margin: "4px 0" }}>Date: {ev.date} | Venue: {ev.venue}</p>
+                    <p style={{ margin: "4px 0", color: "var(--text-muted)", fontSize: "0.9rem" }}>Price: ₹{ev.price} | Seats Left: <strong>{ev.seatsLeft}/{ev.seats}</strong></p>
+                  </div>
+                  <button 
+                    className="btn-primary" 
+                    style={{ background: "var(--danger)", color: "#fff", padding: "8px 12px", fontSize: "0.8rem", width: "auto" }}
+                    onClick={() => handleDeleteEvent(ev._id)}
+                  >
+                    Delete Event
+                  </button>
                 </div>
               ))}
             </div>
@@ -367,16 +409,20 @@ function ClubDashboard() {
           <div className="glass-panel" style={{ maxWidth: "500px", width: "100%", padding: "24px", borderRadius: "16px", position: "relative", border: "1px solid rgba(255,255,255,0.1)" }}>
             <h3 style={{ margin: "0 0 16px 0", color: "var(--primary)" }}>Verify Payment Proof</h3>
             <p style={{ margin: "6px 0" }}><strong>Student:</strong> {selectedBooking.studentName}</p>
+            {selectedBooking.studentRollNumber && <p style={{ margin: "6px 0" }}><strong>Roll Number:</strong> {selectedBooking.studentRollNumber}</p>}
+            {selectedBooking.studentMobile && <p style={{ margin: "6px 0" }}><strong>Mobile:</strong> {selectedBooking.studentMobile}</p>}
+            {selectedBooking.studentEmail && <p style={{ margin: "6px 0" }}><strong>Email:</strong> {selectedBooking.studentEmail}</p>}
             <p style={{ margin: "6px 0" }}><strong>Event:</strong> {selectedBooking.eventName}</p>
             <p style={{ margin: "6px 0" }}><strong>Status:</strong> <span style={{ color: selectedBooking.status === "Approved" ? "var(--success)" : selectedBooking.status === "Rejected" ? "var(--danger)" : "orange", fontWeight: "bold" }}>{selectedBooking.status}</span></p>
             <div style={{ background: "#000", borderRadius: "8px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center", height: "250px", margin: "16px 0", border: "1px solid rgba(255,255,255,0.1)" }}>
               <img src={selectedBooking.screenshot} alt="Payment Proof" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
             </div>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <button className="btn-primary" style={{ background: "var(--danger)", color: "#fff", padding: "8px 16px" }} onClick={() => handleDeleteBooking(selectedBooking._id)}>Delete Booking</button>
               <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => setSelectedBooking(null)}>Close</button>
               {selectedBooking.status === "Pending" && (
                 <>
-                  <button className="btn-primary" style={{ background: "var(--danger)", color: "#fff", padding: "8px 16px" }} onClick={() => handleStatusUpdate(selectedBooking._id, "Rejected")}>Reject</button>
+                  <button className="btn-primary" style={{ background: "orange", color: "#fff", padding: "8px 16px" }} onClick={() => handleStatusUpdate(selectedBooking._id, "Rejected")}>Reject</button>
                   <button className="btn-primary" style={{ background: "var(--success)", color: "#fff", padding: "8px 16px" }} onClick={() => handleStatusUpdate(selectedBooking._id, "Approved")}>Approve</button>
                 </>
               )}

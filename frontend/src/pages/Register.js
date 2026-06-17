@@ -13,12 +13,21 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [clubName, setClubName] = useState("");
+  const [collegeName, setCollegeName] = useState("");
+  const [rollNumber, setRollNumber] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
 
   const handleRegister = async (e) => {
     e.preventDefault();
     try {
       const payload = { name, email, password, role };
-      if (role === "club") payload.clubName = clubName;
+      if (role === "club") {
+        payload.clubName = clubName;
+        payload.collegeName = collegeName;
+      } else if (role === "student") {
+        payload.rollNumber = rollNumber;
+        payload.mobileNumber = mobileNumber;
+      }
       
       const res = await axios.post(`${API_BASE_URL}/api/auth/register`, payload);
       alert(res.data.message || "Registered Successfully! Please Login.");
@@ -62,17 +71,54 @@ function Register() {
             />
           </div>
 
+          {role === "student" && (
+            <>
+              <div className="form-group">
+                <label>Roll Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. CS2026101"
+                  value={rollNumber}
+                  onChange={(e) => setRollNumber(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Mobile Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 9876543210"
+                  value={mobileNumber}
+                  onChange={(e) => setMobileNumber(e.target.value)}
+                  required
+                />
+              </div>
+            </>
+          )}
+
           {role === "club" && (
-            <div className="form-group">
-              <label>Club Name</label>
-              <input
-                type="text"
-                placeholder="Tech Club"
-                value={clubName}
-                onChange={(e) => setClubName(e.target.value)}
-                required
-              />
-            </div>
+            <>
+              <div className="form-group">
+                <label>Club Name</label>
+                <input
+                  type="text"
+                  placeholder="Tech Club"
+                  value={clubName}
+                  onChange={(e) => setClubName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>College Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. State University"
+                  value={collegeName}
+                  onChange={(e) => setCollegeName(e.target.value)}
+                  required
+                />
+              </div>
+            </>
           )}
 
           <div className="form-group">

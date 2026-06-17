@@ -74,6 +74,11 @@ function ClubLogin() {
             >
               Register New Club
             </button>
+            <p className="auth-footer" style={{ marginTop: "15px", width: "100%", textAlign: "center" }}>
+              <span className="auth-link" onClick={() => navigate("/forgot-password")}>
+                Forgot Password?
+              </span>
+            </p>
           </div>
         </form>
       </motion.div>

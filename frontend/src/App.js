@@ -12,6 +12,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import ClubDashboard from "./pages/ClubDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import BookingPage from "./pages/BookingPage";
+import ForgotPassword from "./pages/ForgotPassword";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             <Route path="/club-login" element={<ClubLogin />} />
             <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/student-dashboard" element={<StudentDashboard />} />
             <Route path="/club-dashboard" element={<ClubDashboard />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
