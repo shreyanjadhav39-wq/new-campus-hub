@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FaPlusCircle, FaUsers, FaSignOutAlt, FaCalendarAlt, FaEdit, FaRegChartBar } from "react-icons/fa";
+import { FaPlusCircle, FaSignOutAlt, FaCalendarAlt, FaEdit, FaRegChartBar } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../config";

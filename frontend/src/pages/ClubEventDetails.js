@@ -10,7 +10,6 @@ import "../styles/dashboard.css";
 function ClubEventDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [user, setUser] = useState(null);
   const [event, setEvent] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,8 +22,8 @@ function ClubEventDetails() {
       navigate("/club-login");
       return;
     }
-    setUser(currentUser);
     fetchDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate]);
 
   const fetchDetails = async () => {
@@ -124,7 +123,6 @@ function ClubEventDetails() {
   if (!event) return null;
 
   // Stats Calculations
-  const totalBookings = bookings.length;
   const approvedCount = bookings.filter(b => b.status === "Approved").length;
   const pendingCount = bookings.filter(b => b.status === "Pending").length;
   const rejectedCount = bookings.filter(b => b.status === "Rejected").length;

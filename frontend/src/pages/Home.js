@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FaCalendarCheck, FaRobot, FaUsers, FaArrowRight, FaTicketAlt, FaSearch, FaFilter } from "react-icons/fa";
+import { FaCalendarCheck, FaRobot, FaUsers, FaArrowRight, FaTicketAlt, FaSearch } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
