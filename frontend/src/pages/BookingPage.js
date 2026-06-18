@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaMoneyCheckAlt, FaCloudUploadAlt } from "react-icons/fa";
+import { toast } from "react-hot-toast";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 import "../styles/dashboard.css"; // Reuse dashboard container styles
@@ -12,11 +13,12 @@ function BookingPage() {
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [rollNumber, setRollNumber] = useState("");
+  const [studentCollegeName, setStudentCollegeName] = useState("");
 
   useEffect(() => {
     const selected = JSON.parse(localStorage.getItem("selectedEvent"));
     if (!selected) {
-      alert("No event selected. Please choose an event from the home page.");
+      toast.error("No event selected. Please choose an event from the home page.");
       navigate("/");
     } else {
       setEvent(selected);
@@ -27,6 +29,7 @@ function BookingPage() {
       setEmail(currentUser.email || "");
       setMobile(currentUser.mobileNumber || "");
       setRollNumber(currentUser.rollNumber || "");
+      setStudentCollegeName(currentUser.collegeName || "");
     }
   }, [navigate]);
 
@@ -38,17 +41,17 @@ function BookingPage() {
   };
 
   const handleSubmit = async () => {
-    if (!email || !mobile || !rollNumber) {
-      alert("Please fill in all student information fields.");
+    if (!email || !mobile || !rollNumber || !studentCollegeName) {
+      toast.error("Please fill in all student information fields.");
       return;
     }
     if (!image) {
-      alert("Please upload payment screenshot.");
+      toast.error("Please upload payment screenshot.");
       return;
     }
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     if (!currentUser) {
-      alert("Please login first");
+      toast.error("Please login first");
       return;
     }
 
@@ -59,6 +62,7 @@ function BookingPage() {
         studentEmail: email,
         studentMobile: mobile,
         studentRollNumber: rollNumber,
+        studentCollegeName: studentCollegeName,
         collegeName: event.collegeName || "",
         eventId: event._id,
         eventName: event.title || event.name,
@@ -70,10 +74,10 @@ function BookingPage() {
       };
 
       await axios.post(`${API_BASE_URL}/api/bookings`, payload);
-      alert("Booking Submitted Successfully 🚀");
+      toast.success("Booking Submitted Successfully 🚀");
       navigate("/student-dashboard");
     } catch (err) {
-      alert("Failed to submit booking");
+      toast.error("Failed to submit booking");
       console.error(err);
     }
   };
@@ -113,6 +117,10 @@ function BookingPage() {
         <div className="dashboard-panel glass-panel">
           <h2>Student Information</h2>
           <div className="auth-form" style={{ background: "rgba(0,0,0,0.1)", padding: "20px", borderRadius: "10px", marginBottom: "20px" }}>
+            <div className="form-group">
+              <label>College Name</label>
+              <input type="text" value={studentCollegeName} onChange={e => setStudentCollegeName(e.target.value)} required placeholder="e.g. State Tech College" />
+            </div>
             <div className="form-group">
               <label>Email Address</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="name@university.edu" />

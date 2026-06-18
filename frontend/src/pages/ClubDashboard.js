@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FaPlusCircle, FaUsers, FaSignOutAlt, FaCalendarAlt, FaDownload } from "react-icons/fa";
+import { FaPlusCircle, FaUsers, FaSignOutAlt, FaCalendarAlt, FaEdit, FaRegChartBar } from "react-icons/fa";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../config";
 import "../styles/dashboard.css";
 
@@ -10,11 +11,10 @@ function ClubDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [events, setEvents] = useState([]);
-  const [bookings, setBookings] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [editingEvent, setEditingEvent] = useState(null);
   
-  // Event Form State
+  // Event Creation Form State
   const [title, setTitle] = useState("");
   const [venue, setVenue] = useState("");
   const [date, setDate] = useState("");
@@ -31,7 +31,6 @@ function ClubDashboard() {
     } else {
       setUser(currentUser);
       fetchEvents(currentUser.clubName);
-      fetchBookings(currentUser.clubName);
     }
   }, [navigate]);
 
@@ -72,15 +71,6 @@ function ClubDashboard() {
     }
   };
 
-  const fetchBookings = async (clubName) => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/bookings/club/${clubName}`);
-      setBookings(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleCreateEvent = async (e) => {
     e.preventDefault();
     try {
@@ -94,7 +84,7 @@ function ClubDashboard() {
         category
       };
       await axios.post(`${API_BASE_URL}/api/events`, payload);
-      alert("Event created successfully!");
+      toast.success("Event created successfully!");
       setShowForm(false);
       setTitle("");
       setVenue("");
@@ -105,19 +95,27 @@ function ClubDashboard() {
       setPrediction(null);
       fetchEvents(user.clubName);
     } catch (err) {
-      alert("Failed to create event");
+      toast.error("Failed to create event");
     }
   };
 
-  const handleStatusUpdate = async (bookingId, newStatus) => {
+  const handleUpdateEvent = async (e) => {
+    e.preventDefault();
     try {
-      await axios.patch(`${API_BASE_URL}/api/bookings/${bookingId}/status`, { status: newStatus });
-      alert(`Booking ${newStatus} successfully!`);
-      setSelectedBooking(null);
-      fetchBookings(user.clubName);
+      const payload = {
+        title: editingEvent.title,
+        venue: editingEvent.venue,
+        date: editingEvent.date,
+        price: Number(editingEvent.price),
+        seats: Number(editingEvent.seats),
+        category: editingEvent.category
+      };
+      await axios.put(`${API_BASE_URL}/api/events/${editingEvent._id}`, payload);
+      toast.success("Event updated successfully!");
+      setEditingEvent(null);
       fetchEvents(user.clubName);
     } catch (err) {
-      alert("Failed to update booking status");
+      toast.error("Failed to update event");
       console.error(err);
     }
   };
@@ -126,65 +124,13 @@ function ClubDashboard() {
     if (window.confirm("Are you sure you want to delete this event? This will also delete all associated bookings!")) {
       try {
         await axios.delete(`${API_BASE_URL}/api/events/${eventId}`);
-        alert("Event deleted successfully!");
+        toast.success("Event deleted successfully!");
         fetchEvents(user.clubName);
-        fetchBookings(user.clubName);
       } catch (err) {
-        alert("Failed to delete event");
+        toast.error("Failed to delete event");
         console.error(err);
       }
     }
-  };
-
-  const handleDeleteBooking = async (bookingId) => {
-    if (window.confirm("Are you sure you want to delete this booking?")) {
-      try {
-        await axios.delete(`${API_BASE_URL}/api/bookings/${bookingId}`);
-        alert("Booking deleted successfully!");
-        setSelectedBooking(null);
-        fetchBookings(user.clubName);
-        fetchEvents(user.clubName);
-      } catch (err) {
-        alert("Failed to delete booking");
-        console.error(err);
-      }
-    }
-  };
-
-  const handleExportToCSV = () => {
-    const approvedBookings = bookings.filter(b => b.status === "Approved");
-    if (approvedBookings.length === 0) {
-      alert("No approved bookings to export.");
-      return;
-    }
-
-    const headers = ["Booking ID", "Student Name", "Roll Number", "Mobile", "Email", "Event Name", "Event Date", "Venue", "Price (INR)", "Status"];
-    const rows = approvedBookings.map(b => [
-      b.bookingId || b._id,
-      b.studentName,
-      b.studentRollNumber || "N/A",
-      b.studentMobile || "N/A",
-      b.studentEmail || "N/A",
-      b.eventName,
-      b.eventDate || "TBA",
-      b.eventVenue || "TBA",
-      b.eventPrice !== undefined ? b.eventPrice : "0",
-      b.status
-    ]);
-
-    const csvContent = [
-      headers.join(","),
-      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `approved_bookings_${user.clubName.replace(/\s+/g, "_")}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handleLogout = () => {
@@ -194,8 +140,6 @@ function ClubDashboard() {
   };
 
   if (!user) return null;
-
-  const approvedBookingsCount = bookings.filter(b => b.status === "Approved").length;
 
   return (
     <div className="dashboard-container">
@@ -220,27 +164,21 @@ function ClubDashboard() {
             <p>Active Events</p>
           </div>
         </motion.div>
-        <motion.div className="stat-card glass-panel" whileHover={{ y: -5 }}>
-          <div className="stat-icon" style={{ color: "var(--secondary)" }}>
-            <FaUsers />
-          </div>
-          <div className="stat-info">
-            <h3>{approvedBookingsCount}</h3>
-            <p>Approved Attendees</p>
-          </div>
-        </motion.div>
       </div>
 
       <div className="dashboard-grid">
-        <div className="dashboard-panel glass-panel" style={{ gridColumn: showForm ? "1 / -1" : "1" }}>
+        <div className="dashboard-panel glass-panel" style={{ gridColumn: showForm || editingEvent ? "1 / -1" : "1" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", paddingBottom: "16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
             <h2 style={{ margin: 0, border: "none", padding: 0 }}>My Events</h2>
-            <button className="btn-primary" style={{ padding: "8px 16px" }} onClick={() => setShowForm(!showForm)}>
-              <FaPlusCircle /> {showForm ? "Cancel" : "New Event"}
-            </button>
+            {!editingEvent && (
+              <button className="btn-primary" style={{ padding: "8px 16px" }} onClick={() => setShowForm(!showForm)}>
+                <FaPlusCircle /> {showForm ? "Cancel" : "New Event"}
+              </button>
+            )}
           </div>
           
-          {showForm && (
+          {/* New Event Form */}
+          {showForm && !editingEvent && (
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "30px" }} className="event-creation-container">
               <form onSubmit={handleCreateEvent} className="auth-form" style={{ background: "rgba(0,0,0,0.2)", padding: "20px", borderRadius: "10px", margin: 0 }}>
                 <div className="form-group"><label>Event Title</label><input type="text" value={title} onChange={e=>setTitle(e.target.value)} required /></div>
@@ -330,106 +268,82 @@ function ClubDashboard() {
             </div>
           )}
 
+          {/* Edit Event Form */}
+          {editingEvent && (
+            <div style={{ marginBottom: "30px" }}>
+              <h3>Modify Event: <span style={{ color: "var(--primary)" }}>{editingEvent.title}</span></h3>
+              <form onSubmit={handleUpdateEvent} className="auth-form" style={{ background: "rgba(255,255,255,0.03)", padding: "24px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.05)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div className="form-group"><label>Event Title</label><input type="text" value={editingEvent.title} onChange={e=>setEditingEvent({...editingEvent, title: e.target.value})} required /></div>
+                <div className="form-group">
+                  <label>Category</label>
+                  <select value={editingEvent.category} onChange={e=>setEditingEvent({...editingEvent, category: e.target.value})} required style={{ width: "100%", padding: "14px 16px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none" }}>
+                    <option value="General">General</option>
+                    <option value="Tech">Tech</option>
+                    <option value="Cultural">Cultural</option>
+                    <option value="Sports">Sports</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Arts">Arts</option>
+                  </select>
+                </div>
+                <div className="form-group"><label>Venue</label><input type="text" value={editingEvent.venue} onChange={e=>setEditingEvent({...editingEvent, venue: e.target.value})} required /></div>
+                <div className="form-group"><label>Date (e.g., Oct 24, 2026)</label><input type="text" value={editingEvent.date} onChange={e=>setEditingEvent({...editingEvent, date: e.target.value})} required /></div>
+                <div className="form-group"><label>Price (₹)</label><input type="number" value={editingEvent.price} onChange={e=>setEditingEvent({...editingEvent, price: e.target.value})} required /></div>
+                <div className="form-group"><label>Total Seats</label><input type="number" value={editingEvent.seats} onChange={e=>setEditingEvent({...editingEvent, seats: e.target.value})} required /></div>
+                
+                <div style={{ gridColumn: "1 / -1", display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "10px" }}>
+                  <button type="button" className="btn-secondary" style={{ width: "auto", padding: "12px 24px" }} onClick={() => setEditingEvent(null)}>Cancel</button>
+                  <button type="submit" className="btn-primary" style={{ width: "auto", padding: "12px 24px" }}>Save Changes</button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {events.length === 0 ? (
             <div className="empty-state">
               <FaCalendarAlt />
               <p>You haven't created any events yet.</p>
             </div>
           ) : (
-            <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               {events.map(ev => (
-                <div key={ev._id} style={{ background: "rgba(255,255,255,0.05)", padding: "15px", borderRadius: "8px", marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div key={ev._id} style={{ background: "rgba(255,255,255,0.04)", padding: "18px", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
                   <div>
-                    <h3 style={{ color: "var(--primary)", marginTop: 0, marginBottom: "6px" }}>{ev.title}</h3>
-                    <p style={{ margin: "4px 0" }}>Date: {ev.date} | Venue: {ev.venue}</p>
-                    <p style={{ margin: "4px 0", color: "var(--text-muted)", fontSize: "0.9rem" }}>Price: ₹{ev.price} | Seats Left: <strong>{ev.seatsLeft}/{ev.seats}</strong></p>
+                    <span style={{ background: "rgba(6,182,212,0.1)", color: "var(--accent)", padding: "2px 8px", borderRadius: "4px", fontSize: "0.75rem", fontWeight: "bold", textTransform: "uppercase", display: "inline-block", marginBottom: "6px" }}>
+                      {ev.category || "General"}
+                    </span>
+                    <h3 style={{ color: "var(--primary)", marginTop: 0, marginBottom: "6px", fontSize: "1.3rem" }}>{ev.title}</h3>
+                    <p style={{ margin: "4px 0", fontSize: "0.95rem" }}>Date: <strong>{ev.date}</strong> | Venue: <strong>{ev.venue}</strong></p>
+                    <p style={{ margin: "4px 0", color: "var(--text-muted)", fontSize: "0.9rem" }}>Price: ₹{ev.price} | Capacity: <strong>{ev.seatsLeft}/{ev.seats} Seats Left</strong></p>
                   </div>
-                  <button 
-                    className="btn-primary" 
-                    style={{ background: "var(--danger)", color: "#fff", padding: "8px 12px", fontSize: "0.8rem", width: "auto" }}
-                    onClick={() => handleDeleteEvent(ev._id)}
-                  >
-                    Delete Event
-                  </button>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <button 
+                      className="btn-primary" 
+                      style={{ background: "var(--secondary)", color: "#000", padding: "8px 16px", fontSize: "0.85rem", width: "auto", display: "flex", alignItems: "center", gap: "6px" }}
+                      onClick={() => navigate(`/club/event/${ev._id}`)}
+                    >
+                      <FaRegChartBar /> Bookings & Stats
+                    </button>
+                    <button 
+                      className="btn-secondary" 
+                      style={{ padding: "8px 16px", fontSize: "0.85rem", width: "auto", display: "flex", alignItems: "center", gap: "6px" }}
+                      onClick={() => setEditingEvent(ev)}
+                    >
+                      <FaEdit /> Modify
+                    </button>
+                    <button 
+                      className="btn-primary" 
+                      style={{ background: "var(--danger)", color: "#fff", padding: "8px 16px", fontSize: "0.85rem", width: "auto" }}
+                      onClick={() => handleDeleteEvent(ev._id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-        
-        {!showForm && (
-          <div className="dashboard-panel glass-panel">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-              <h2 style={{ margin: 0, border: "none", padding: 0 }}>Recent Bookings</h2>
-              {bookings.filter(b => b.status === "Approved").length > 0 && (
-                <button 
-                  className="btn-primary" 
-                  style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "0.85rem", background: "var(--success)" }}
-                  onClick={handleExportToCSV}
-                >
-                  <FaDownload /> Export CSV
-                </button>
-              )}
-            </div>
-            {bookings.length === 0 ? (
-              <div className="empty-state">
-                <p>No bookings to display.</p>
-              </div>
-            ) : (
-              <div className="bookings-list" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {bookings.map(b => (
-                  <div key={b._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(255,255,255,0.03)", padding: "12px 16px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.05)" }}>
-                    <div>
-                      <h4 style={{ margin: "0 0 4px 0", color: "var(--text)" }}>{b.studentName}</h4>
-                      <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                        Event: <strong style={{ color: "var(--primary)" }}>{b.eventName}</strong>
-                      </p>
-                      <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem" }}>
-                        Status: <span style={{ color: b.status === "Approved" ? "var(--success)" : b.status === "Rejected" ? "var(--danger)" : "orange", fontWeight: "bold" }}>{b.status}</span>
-                      </p>
-                    </div>
-                    <div>
-                      {b.screenshot && (
-                        <button className="btn-secondary" style={{ padding: "6px 12px", fontSize: "0.8rem" }} onClick={() => setSelectedBooking(b)}>
-                          {b.status === "Pending" ? "Verify Proof" : "View Proof"}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
-
-      {/* Proof Modal */}
-      {selectedBooking && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000, padding: "20px" }}>
-          <div className="glass-panel" style={{ maxWidth: "500px", width: "100%", padding: "24px", borderRadius: "16px", position: "relative", border: "1px solid rgba(255,255,255,0.1)" }}>
-            <h3 style={{ margin: "0 0 16px 0", color: "var(--primary)" }}>Verify Payment Proof</h3>
-            <p style={{ margin: "6px 0" }}><strong>Student:</strong> {selectedBooking.studentName}</p>
-            {selectedBooking.studentRollNumber && <p style={{ margin: "6px 0" }}><strong>Roll Number:</strong> {selectedBooking.studentRollNumber}</p>}
-            {selectedBooking.studentMobile && <p style={{ margin: "6px 0" }}><strong>Mobile:</strong> {selectedBooking.studentMobile}</p>}
-            {selectedBooking.studentEmail && <p style={{ margin: "6px 0" }}><strong>Email:</strong> {selectedBooking.studentEmail}</p>}
-            <p style={{ margin: "6px 0" }}><strong>Event:</strong> {selectedBooking.eventName}</p>
-            <p style={{ margin: "6px 0" }}><strong>Status:</strong> <span style={{ color: selectedBooking.status === "Approved" ? "var(--success)" : selectedBooking.status === "Rejected" ? "var(--danger)" : "orange", fontWeight: "bold" }}>{selectedBooking.status}</span></p>
-            <div style={{ background: "#000", borderRadius: "8px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center", height: "250px", margin: "16px 0", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <img src={selectedBooking.screenshot} alt="Payment Proof" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-            </div>
-            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
-              <button className="btn-primary" style={{ background: "var(--danger)", color: "#fff", padding: "8px 16px" }} onClick={() => handleDeleteBooking(selectedBooking._id)}>Delete Booking</button>
-              <button className="btn-secondary" style={{ padding: "8px 16px" }} onClick={() => setSelectedBooking(null)}>Close</button>
-              {selectedBooking.status === "Pending" && (
-                <>
-                  <button className="btn-primary" style={{ background: "orange", color: "#fff", padding: "8px 16px" }} onClick={() => handleStatusUpdate(selectedBooking._id, "Rejected")}>Reject</button>
-                  <button className="btn-primary" style={{ background: "var(--success)", color: "#fff", padding: "8px 16px" }} onClick={() => handleStatusUpdate(selectedBooking._id, "Approved")}>Approve</button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

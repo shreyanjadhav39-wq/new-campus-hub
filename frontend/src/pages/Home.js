@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FaCalendarCheck, FaRobot, FaUsers, FaArrowRight, FaTicketAlt } from "react-icons/fa";
+import { FaCalendarCheck, FaRobot, FaUsers, FaArrowRight, FaTicketAlt, FaSearch, FaFilter } from "react-icons/fa";
+import { toast } from "react-hot-toast";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 import "../styles/home.css";
@@ -9,6 +10,9 @@ import "../styles/home.css";
 function Home() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCollege, setSelectedCollege] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -22,16 +26,30 @@ function Home() {
     fetchEvents();
   }, []);
 
+  const uniqueColleges = Array.from(
+    new Set(events.map(ev => ev.collegeName).filter(Boolean))
+  );
+
+  const getFilteredEvents = () => {
+    return events.filter(ev => {
+      const matchesSearch = ev.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            ev.clubName?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCollege = selectedCollege === "all" || ev.collegeName === selectedCollege;
+      const matchesCategory = selectedCategory === "all" || ev.category === selectedCategory;
+      return matchesSearch && matchesCollege && matchesCategory;
+    });
+  };
+
   const handleBook = (event) => {
     const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     if (!currentUser) {
-      alert("Please login as a student to book events.");
+      toast.error("Please login as a student to book events.");
       localStorage.setItem("selectedEvent", JSON.stringify(event));
       navigate("/student-login");
       return;
     }
     if (currentUser.role !== "student") {
-      alert("Only student accounts can book event tickets.");
+      toast.error("Only student accounts can book event tickets.");
       return;
     }
     localStorage.setItem("selectedEvent", JSON.stringify(event));
@@ -74,11 +92,52 @@ function Home() {
           <p>Discover and book the hottest events on campus right now.</p>
         </div>
 
+        {/* Search & Filters */}
+        <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginBottom: "30px", maxWidth: "900px", margin: "0 auto 30px auto" }} className="search-filter-container">
+          <div style={{ position: "relative", flex: 2, minWidth: "250px" }}>
+            <FaSearch style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }} />
+            <input
+              type="text"
+              placeholder="Search by event title or club..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ width: "100%", padding: "12px 16px 12px 40px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none" }}
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: "180px" }}>
+            <select
+              value={selectedCollege}
+              onChange={(e) => setSelectedCollege(e.target.value)}
+              style={{ width: "100%", padding: "12px 16px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none", cursor: "pointer" }}
+            >
+              <option value="all">All Colleges</option>
+              {uniqueColleges.map((col, index) => (
+                <option key={index} value={col}>{col}</option>
+              ))}
+            </select>
+          </div>
+          <div style={{ flex: 1, minWidth: "150px" }}>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              style={{ width: "100%", padding: "12px 16px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none", cursor: "pointer" }}
+            >
+              <option value="all">All Categories</option>
+              <option value="General">General</option>
+              <option value="Tech">Tech</option>
+              <option value="Cultural">Cultural</option>
+              <option value="Sports">Sports</option>
+              <option value="Workshop">Workshop</option>
+              <option value="Arts">Arts</option>
+            </select>
+          </div>
+        </div>
+
         <div className="features-grid">
-          {events.length === 0 ? (
-            <p style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--text-muted)" }}>No events found. Check back later!</p>
+          {getFilteredEvents().length === 0 ? (
+            <p style={{ gridColumn: "1 / -1", textAlign: "center", color: "var(--text-muted)" }}>No events matching your filters. Check back later!</p>
           ) : (
-            events.map((ev, i) => (
+            getFilteredEvents().map((ev, i) => (
               <motion.div 
                 key={ev._id}
                 className="feature-card glass-panel"
@@ -96,6 +155,7 @@ function Home() {
                   <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>{ev.date}</span>
                 </div>
                 <h3>{ev.title}</h3>
+                {ev.collegeName && <p style={{ marginBottom: "8px", color: "var(--accent)", fontSize: "0.9rem" }}>🏫 {ev.collegeName}</p>}
                 <p style={{ marginBottom: "8px" }}><strong>Venue:</strong> {ev.venue}</p>
                 <p style={{ marginBottom: "8px" }}><strong>Price:</strong> ₹{ev.price}</p>
                 <p style={{ marginBottom: "20px" }}><strong>Seats Left:</strong> {ev.seatsLeft}/{ev.seats}</p>

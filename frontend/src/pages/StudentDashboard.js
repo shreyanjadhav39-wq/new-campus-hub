@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FaTicketAlt, FaHistory, FaSignOutAlt, FaRegCalendarTimes, FaDownload } from "react-icons/fa";
+import { toast } from "react-hot-toast";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 import "../styles/dashboard.css";
@@ -83,6 +84,7 @@ function StudentDashboard() {
     const dateStr = b.eventDate || "TBA";
     const venueStr = b.eventVenue || "TBA";
     const collegeStr = b.collegeName || "N/A";
+    const studentCollegeStr = b.studentCollegeName || "N/A";
     const emailStr = b.studentEmail || "N/A";
     const mobileStr = b.studentMobile || "N/A";
     const rollStr = b.studentRollNumber || "N/A";
@@ -221,8 +223,12 @@ function StudentDashboard() {
                 <span class="info-value" style="font-family: monospace; font-size: 0.95rem; font-weight: bold;">${verificationId}</span>
               </div>
               <div class="info-row">
-                <span class="info-label">College Name</span>
+                <span class="info-label">Host College</span>
                 <span class="info-value" style="color: #3b82f6;">${collegeStr}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Student College</span>
+                <span class="info-value">${studentCollegeStr}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Student Name</span>
@@ -270,6 +276,22 @@ function StudentDashboard() {
     printWindow.document.close();
   };
 
+  const handleCancelBooking = async (bookingId) => {
+    if (window.confirm("Are you sure you want to cancel this booking?\n\nDISCLAIMER: Ticket money will NOT be refunded under any circumstances!")) {
+      try {
+        await axios.delete(`${API_BASE_URL}/api/bookings/${bookingId}`);
+        toast.success("Booking cancelled successfully.");
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        if (currentUser) {
+          fetchBookings(currentUser._id);
+        }
+      } catch (err) {
+        toast.error("Failed to cancel booking.");
+        console.error(err);
+      }
+    }
+  };
+
   const handleBookEvent = (event) => {
     localStorage.setItem("selectedEvent", JSON.stringify(event));
     navigate("/booking");
@@ -301,7 +323,7 @@ function StudentDashboard() {
             <FaTicketAlt />
           </div>
           <div className="stat-info">
-            <h3>{bookings.filter(b => b.status !== "Completed").length}</h3>
+            <h3>{bookings.filter(b => b.status !== "Completed" && b.status !== "Rejected").length}</h3>
             <p>Upcoming Events</p>
           </div>
         </motion.div>
@@ -380,6 +402,15 @@ function StudentDashboard() {
                         <FaDownload /> Receipt
                       </button>
                     )}
+                    {(b.status === "Pending" || b.status === "Approved") && (
+                      <button 
+                        className="btn-primary" 
+                        style={{ padding: "8px 14px", fontSize: "0.85rem", background: "var(--danger)", color: "#fff", width: "auto" }}
+                        onClick={() => handleCancelBooking(b._id)}
+                      >
+                        Cancel Booking
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -415,6 +446,7 @@ function StudentDashboard() {
                   </span>
                   
                   <h3 style={{ fontSize: "1.05rem", color: "var(--text-main)", margin: "2px 0 0 0" }}>{ev.title}</h3>
+                  {ev.collegeName && <p style={{ margin: "2px 0", fontSize: "0.8rem", color: "var(--accent)" }}>🏫 {ev.collegeName}</p>}
                   <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-muted)" }}>Date: {ev.date} | Venue: {ev.venue}</p>
                   
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px" }}>

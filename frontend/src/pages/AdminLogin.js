@@ -2,20 +2,22 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaUserShield } from "react-icons/fa";
+import { toast } from "react-hot-toast";
 import "../styles/login.css";
 
 function AdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (email === "admin@hub.com" && password === "admin123") {
-      localStorage.setItem("currentUser", JSON.stringify({ role: "admin", email }));
+    if (username === "teamcampushub" && password === "csaif3") {
+      localStorage.setItem("currentUser", JSON.stringify({ role: "admin", email: username }));
+      toast.success("Welcome back, Administrator!");
       navigate("/admin-dashboard");
     } else {
-      alert("Invalid Admin Credentials");
+      toast.error("Invalid Admin Credentials");
     }
   };
 
@@ -35,12 +37,12 @@ function AdminLogin() {
 
         <form className="auth-form" onSubmit={handleLogin}>
           <div className="form-group">
-            <label>Admin Email</label>
+            <label>Admin Username</label>
             <input
-              type="email"
-              placeholder="admin@hub.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              placeholder="e.g. teamcampushub"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>

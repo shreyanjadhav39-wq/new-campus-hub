@@ -3,14 +3,24 @@ const router = express.Router();
 const Booking = require("../models/Booking");
 const Event = require("../models/Event");
 
+// GET all bookings (admin overview)
+router.get("/", async (req, res) => {
+  try {
+    const bookings = await Booking.find();
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST a new booking
 router.post("/", async (req, res) => {
   try {
-    const { studentId, studentName, studentEmail, studentMobile, studentRollNumber, collegeName, eventId, eventName, clubId, screenshot, eventPrice, eventDate, eventVenue } = req.body;
+    const { studentId, studentName, studentEmail, studentMobile, studentRollNumber, studentCollegeName, collegeName, eventId, eventName, clubId, screenshot, eventPrice, eventDate, eventVenue } = req.body;
     
     // Explicit validation to prevent undefined/broken booking entries
-    if (!studentId || !studentName || !studentEmail || !studentMobile || !studentRollNumber || !eventId || !eventName || !clubId || !screenshot) {
-      return res.status(400).json({ error: "Missing required booking details (student info, event, club, or payment proof screenshot)." });
+    if (!studentId || !studentName || !studentEmail || !studentMobile || !studentRollNumber || !studentCollegeName || !eventId || !eventName || !clubId || !screenshot) {
+      return res.status(400).json({ error: "Missing required booking details (student info, college, event, club, or payment proof screenshot)." });
     }
 
     // Generate custom booking ID: 2 uppercase alphabetic/numeric chars of event name + sequential numbers
@@ -42,6 +52,7 @@ router.post("/", async (req, res) => {
       studentEmail,
       studentMobile,
       studentRollNumber,
+      studentCollegeName,
       collegeName,
       eventId,
       eventName,
@@ -78,6 +89,16 @@ router.get("/student/:studentId", async (req, res) => {
 router.get("/club/:clubId", async (req, res) => {
   try {
     const bookings = await Booking.find({ clubId: req.params.clubId });
+    res.json(bookings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET bookings for a specific event
+router.get("/event/:eventId", async (req, res) => {
+  try {
+    const bookings = await Booking.find({ eventId: req.params.eventId });
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: err.message });

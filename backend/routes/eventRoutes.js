@@ -48,6 +48,35 @@ router.post("/", async (req, res) => {
   }
 });
 
+// PUT update an event
+router.put("/:id", async (req, res) => {
+  try {
+    const { title, venue, date, price, seats, category } = req.body;
+    const event = await Event.findById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    if (seats !== undefined && seats !== "") {
+      const numSeats = Number(seats);
+      const diff = numSeats - (event.seats || 0);
+      event.seats = numSeats;
+      event.seatsLeft = Math.max(0, (event.seatsLeft || 0) + diff);
+    }
+
+    event.title = title || event.title;
+    event.venue = venue || event.venue;
+    event.date = date || event.date;
+    event.price = price !== undefined ? Number(price) : event.price;
+    event.category = category || event.category;
+
+    const updatedEvent = await event.save();
+    res.json(updatedEvent);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /predict-success
 router.post("/predict-success", async (req, res) => {
   try {

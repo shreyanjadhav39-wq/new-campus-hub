@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FaUserPlus } from "react-icons/fa";
 import axios from "axios";
+import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../config";
 import "../styles/login.css";
 
@@ -27,13 +28,14 @@ function Register() {
       } else if (role === "student") {
         payload.rollNumber = rollNumber;
         payload.mobileNumber = mobileNumber;
+        payload.collegeName = collegeName;
       }
       
       const res = await axios.post(`${API_BASE_URL}/api/auth/register`, payload);
-      alert(res.data.message || "Registered Successfully! Please Login.");
+      toast.success(res.data.message || "Registered Successfully! Please Login.");
       navigate(role === "student" ? "/student-login" : "/club-login");
     } catch (err) {
-      alert(err.response?.data?.message || "Registration failed");
+      toast.error(err.response?.data?.message || "Registration failed");
     }
   };
 
@@ -73,6 +75,16 @@ function Register() {
 
           {role === "student" && (
             <>
+              <div className="form-group">
+                <label>College Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. State Tech College"
+                  value={collegeName}
+                  onChange={(e) => setCollegeName(e.target.value)}
+                  required
+                />
+              </div>
               <div className="form-group">
                 <label>Roll Number</label>
                 <input

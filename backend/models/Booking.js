@@ -25,6 +25,10 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  studentCollegeName: {
+    type: String,
+    required: true
+  },
   collegeName: {
     type: String,
     required: false
