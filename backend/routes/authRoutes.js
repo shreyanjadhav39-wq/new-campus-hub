@@ -39,7 +39,7 @@ router.post("/register", async (req, res) => {
       password: hashedPassword,
       role,
       clubName: role === "club" ? clubName : undefined,
-      collegeName: role === "club" ? collegeName : undefined,
+      collegeName: (role === "club" || role === "student") ? collegeName : undefined,
       rollNumber: role === "student" ? rollNumber : undefined,
       mobileNumber: role === "student" ? mobileNumber : undefined
     });
