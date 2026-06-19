@@ -1,10 +1,11 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FaArrowLeft, FaCheck, FaTimes, FaTrash, FaDownload, FaUserAlt, FaCreditCard, FaTicketAlt, FaSchool } from "react-icons/fa";
+import { FaArrowLeft, FaCheck, FaTimes, FaTrash, FaDownload, FaUserAlt, FaCreditCard, FaTicketAlt, FaSchool, FaCamera, FaQrcode } from "react-icons/fa";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../config";
+import { Html5QrcodeScanner } from "html5-qrcode";
 import "../styles/dashboard.css";
 
 function ClubEventDetails() {
@@ -15,6 +16,11 @@ function ClubEventDetails() {
   const [loading, setLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
+  
+  // QR Scanner state
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+  const [manualCode, setManualCode] = useState("");
 
   useEffect(() => {
     const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
@@ -25,6 +31,60 @@ function ClubEventDetails() {
     fetchDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate]);
+
+  useEffect(() => {
+    if (!showScanner) return;
+
+    const scanner = new Html5QrcodeScanner("reader", {
+      fps: 10,
+      qrbox: { width: 250, height: 250 },
+    });
+
+    const onScanSuccess = async (decodedText) => {
+      try {
+        scanner.clear();
+        setShowScanner(false);
+        setScanResult({ loading: true });
+        
+        const res = await axios.post(`${API_BASE_URL}/api/bookings/check-in`, { bookingId: decodedText });
+        toast.success(res.data.message || "Attendee Checked In Successfully!");
+        setScanResult({ success: true, message: res.data.message, booking: res.data.booking });
+        fetchDetails();
+      } catch (err) {
+        const errMsg = err.response?.data?.error || "Check-in failed. Invalid or already scanned ticket.";
+        toast.error(errMsg);
+        setScanResult({ success: false, error: errMsg });
+      }
+    };
+
+    const onScanFailure = (err) => {
+      // Silent ignore frames without QR codes
+    };
+
+    scanner.render(onScanSuccess, onScanFailure);
+
+    return () => {
+      scanner.clear().catch(err => console.error("Failed to clear scanner on unmount", err));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showScanner]);
+
+  const handleManualCheckIn = async (e) => {
+    e.preventDefault();
+    if (!manualCode.trim()) return;
+    try {
+      setScanResult({ loading: true });
+      const res = await axios.post(`${API_BASE_URL}/api/bookings/check-in`, { bookingId: manualCode });
+      toast.success(res.data.message || "Attendee Checked In Successfully!");
+      setScanResult({ success: true, message: res.data.message, booking: res.data.booking });
+      setManualCode("");
+      fetchDetails();
+    } catch (err) {
+      const errMsg = err.response?.data?.error || "Check-in failed. Invalid or already scanned ticket.";
+      toast.error(errMsg);
+      setScanResult({ success: false, error: errMsg });
+    }
+  };
 
   const fetchDetails = async () => {
     setLoading(true);
@@ -137,6 +197,8 @@ function ClubEventDetails() {
   const approvedCount = bookings.filter(b => b.status === "Approved").length;
   const pendingCount = bookings.filter(b => b.status === "Pending").length;
   const rejectedCount = bookings.filter(b => b.status === "Rejected").length;
+  const checkedInCount = bookings.filter(b => b.checkedIn).length;
+  const checkedInPercentage = Math.round((checkedInCount / approvedCount) * 100) || 0;
 
   const seatsReserved = event.seats - event.seatsLeft;
   const seatsPercentage = Math.round((seatsReserved / event.seats) * 100) || 0;
@@ -169,7 +231,7 @@ function ClubEventDetails() {
       </div>
 
       {/* Event Stats Dashboard */}
-      <div className="dashboard-stats" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px", marginBottom: "30px" }}>
+      <div className="dashboard-stats" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px", marginBottom: "30px" }}>
         <motion.div className="stat-card glass-panel" whileHover={{ y: -5 }}>
           <div className="stat-icon" style={{ color: "var(--primary)" }}>
             <FaTicketAlt />
@@ -202,6 +264,102 @@ function ClubEventDetails() {
             <p>{approvedCount} Approved | {rejectedCount} Rejected</p>
           </div>
         </motion.div>
+
+        <motion.div className="stat-card glass-panel" whileHover={{ y: -5 }}>
+          <div className="stat-icon" style={{ color: "var(--accent)" }}>
+            <FaQrcode />
+          </div>
+          <div className="stat-info">
+            <h3>{checkedInCount} / {approvedCount}</h3>
+            <p>Checked In ({checkedInPercentage}%)</p>
+            <div style={{ width: "100%", height: "6px", background: "rgba(255,255,255,0.1)", borderRadius: "3px", overflow: "hidden", marginTop: "8px" }}>
+              <div style={{ width: `${checkedInPercentage}%`, height: "100%", background: "var(--accent)" }}></div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Real-time Ticket Check-In Scanner Section */}
+      <div className="dashboard-panel glass-panel" style={{ marginBottom: "30px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h2 style={{ margin: 0, border: "none", padding: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+            <FaQrcode style={{ color: "var(--accent)" }} /> Gate Check-In Desk
+          </h2>
+          <button 
+            className="btn-primary" 
+            style={{ width: "auto", padding: "8px 16px", background: showScanner ? "var(--danger)" : "var(--accent)", color: showScanner ? "#fff" : "#000" }}
+            onClick={() => {
+              setShowScanner(!showScanner);
+              setScanResult(null);
+            }}
+          >
+            {showScanner ? "Close Camera" : "Open QR Scanner"}
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", flexWrap: "wrap" }} className="event-creation-container">
+          {/* Scanner view */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.2)", borderRadius: "12px", padding: "20px", border: "1px solid rgba(255,255,255,0.05)", minHeight: "280px" }}>
+            {showScanner ? (
+              <div id="reader" style={{ width: "100%", maxWidth: "320px", borderRadius: "8px", overflow: "hidden" }}></div>
+            ) : (
+              <div style={{ textAlign: "center", color: "var(--text-muted)" }}>
+                <FaCamera style={{ fontSize: "3.5rem", opacity: 0.2, margin: "0 auto 12px auto", display: "block" }} />
+                <p>Click "Open QR Scanner" to use your device's camera for scanning student ticket QR codes.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Manual Entry and Result Output */}
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", background: "rgba(0,0,0,0.15)", borderRadius: "12px", padding: "20px", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <form onSubmit={handleManualCheckIn} className="auth-form" style={{ background: "transparent", border: "none", padding: 0, margin: 0 }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label>Manual Ticket ID Check-In</label>
+                <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
+                  <input 
+                    type="text" 
+                    placeholder="Enter Booking ID (e.g. EV1001 or Mongodb ID)" 
+                    value={manualCode}
+                    onChange={e => setManualCode(e.target.value)}
+                    style={{ flex: 1, padding: "10px 14px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none" }}
+                  />
+                  <button type="submit" className="btn-primary" style={{ width: "auto", padding: "10px 20px" }}>Check In</button>
+                </div>
+              </div>
+            </form>
+
+            <div style={{ marginTop: "20px", borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: "20px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              {scanResult === null ? (
+                <p style={{ color: "var(--text-muted)", textAlign: "center", fontStyle: "italic" }}>Waiting for scans or manual entry...</p>
+              ) : scanResult.loading ? (
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ border: "3px solid rgba(255,255,255,0.1)", borderLeftColor: "var(--accent)", borderRadius: "50%", width: "30px", height: "30px", animation: "spin 1s linear infinite", margin: "0 auto 10px auto" }}></div>
+                  <p style={{ color: "var(--text-muted)", textAlign: "center" }}>Processing check-in...</p>
+                </div>
+              ) : scanResult.success ? (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{ background: "rgba(16, 185, 129, 0.1)", border: "1px solid var(--success)", borderRadius: "8px", padding: "16px", color: "var(--success)" }}
+                >
+                  <h4 style={{ margin: "0 0 8px 0", fontSize: "1.1rem" }}>✅ Check-In Successful!</h4>
+                  <p style={{ margin: "4px 0", color: "var(--text-main)" }}><strong>Attendee:</strong> {scanResult.booking.studentName}</p>
+                  <p style={{ margin: "4px 0", color: "var(--text-muted)", fontSize: "0.9rem" }}><strong>Ticket ID:</strong> {scanResult.booking.bookingId}</p>
+                  <p style={{ margin: "4px 0", color: "var(--text-muted)", fontSize: "0.9rem" }}><strong>Time:</strong> {new Date(scanResult.booking.checkInTime).toLocaleTimeString()}</p>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid var(--danger)", borderRadius: "8px", padding: "16px", color: "var(--danger)" }}
+                >
+                  <h4 style={{ margin: "0 0 8px 0", fontSize: "1.1rem" }}>❌ Check-In Failed</h4>
+                  <p style={{ margin: 0, color: "var(--text-main)" }}>{scanResult.error}</p>
+                </motion.div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Bookings List Panel */}
@@ -242,6 +400,7 @@ function ClubEventDetails() {
                   <th style={{ padding: "12px 8px" }}>College Details</th>
                   <th style={{ padding: "12px 8px" }}>Roll / Contact</th>
                   <th style={{ padding: "12px 8px" }}>Status</th>
+                  <th style={{ padding: "12px 8px" }}>Attendance</th>
                   <th style={{ padding: "12px 8px", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
@@ -271,8 +430,52 @@ function ClubEventDetails() {
                         {b.status}
                       </span>
                     </td>
+                    <td style={{ padding: "12px 8px" }}>
+                      {b.status === "Approved" ? (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ 
+                            color: b.checkedIn ? "var(--success)" : "var(--text-muted)",
+                            fontSize: "0.85rem",
+                            fontWeight: "bold"
+                          }}>
+                            {b.checkedIn ? "Checked In" : "Not Checked In"}
+                          </span>
+                          {b.checkedIn && b.checkInTime && (
+                            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                              {new Date(b.checkInTime).toLocaleTimeString()}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>—</span>
+                      )}
+                    </td>
                     <td style={{ padding: "12px 8px", textAlign: "right" }}>
-                      <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                      <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end", alignItems: "center" }}>
+                        {b.status === "Approved" && (
+                          <button 
+                            className="btn-primary" 
+                            style={{ 
+                              padding: "6px 10px", 
+                              fontSize: "0.75rem", 
+                              width: "auto", 
+                              background: b.checkedIn ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
+                              color: b.checkedIn ? "var(--danger)" : "var(--success)",
+                              border: `1px solid ${b.checkedIn ? "rgba(239, 68, 68, 0.2)" : "rgba(16, 185, 129, 0.2)"}`
+                            }} 
+                            onClick={async () => {
+                              try {
+                                await axios.patch(`${API_BASE_URL}/api/bookings/${b._id}/check-in`, { checkedIn: !b.checkedIn });
+                                toast.success(b.checkedIn ? "Check-in reverted." : "Checked in successfully!");
+                                fetchDetails();
+                              } catch (err) {
+                                toast.error(err.response?.data?.error || "Failed to update check-in status");
+                              }
+                            }}
+                          >
+                            {b.checkedIn ? "Undo In" : "Check In"}
+                          </button>
+                        )}
                         <button className="btn-secondary" style={{ padding: "6px 10px", fontSize: "0.75rem", width: "auto" }} onClick={() => handleVerifyProof(b)}>
                           Verify Proof
                         </button>

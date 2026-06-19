@@ -26,12 +26,13 @@ router.get("/club/:clubName", async (req, res) => {
 // POST a new event
 router.post("/", async (req, res) => {
   try {
-    const { title, venue, date, price, seats, createdBy, clubName, collegeName, category, paymentType, paymentLink, paymentQR } = req.body;
+    const { title, venue, date, startTime, price, seats, createdBy, clubName, collegeName, category, paymentType, paymentLink, paymentQR, description, bannerImage } = req.body;
     
     const newEvent = new Event({
       title,
       venue,
       date,
+      startTime,
       price,
       seats,
       seatsLeft: seats,
@@ -39,6 +40,8 @@ router.post("/", async (req, res) => {
       clubName,
       collegeName,
       category: category || "General",
+      description,
+      bannerImage,
       paymentType: paymentType || "default",
       paymentLink,
       paymentQR
@@ -54,11 +57,15 @@ router.post("/", async (req, res) => {
 // PUT update an event
 router.put("/:id", async (req, res) => {
   try {
-    const { title, venue, date, price, seats, category, paymentType, paymentLink, paymentQR } = req.body;
+    const { title, venue, date, startTime, price, seats, category, paymentType, paymentLink, paymentQR, description, bannerImage } = req.body;
     const event = await Event.findById(req.params.id);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
+
+    const isDateChanged = date && date !== event.date;
+    const isVenueChanged = venue && venue !== event.venue;
+    const isTimeChanged = startTime && startTime !== event.startTime;
 
     if (seats !== undefined && seats !== "") {
       const numSeats = Number(seats);
@@ -70,8 +77,11 @@ router.put("/:id", async (req, res) => {
     event.title = title || event.title;
     event.venue = venue || event.venue;
     event.date = date || event.date;
+    event.startTime = startTime !== undefined ? startTime : event.startTime;
     event.price = price !== undefined ? Number(price) : event.price;
     event.category = category || event.category;
+    event.description = description !== undefined ? description : event.description;
+    event.bannerImage = bannerImage !== undefined ? bannerImage : event.bannerImage;
     event.paymentType = paymentType || event.paymentType;
     event.paymentLink = paymentLink !== undefined ? paymentLink : event.paymentLink;
     event.paymentQR = paymentQR !== undefined ? paymentQR : event.paymentQR;

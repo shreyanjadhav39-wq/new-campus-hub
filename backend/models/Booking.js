@@ -64,6 +64,13 @@ const bookingSchema = new mongoose.Schema({
   status: {
     type: String,
     default: "Pending"
+  },
+  checkedIn: {
+    type: Boolean,
+    default: false
+  },
+  checkInTime: {
+    type: Date
   }
 });
 

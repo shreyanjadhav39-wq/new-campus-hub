@@ -264,9 +264,198 @@ function StudentDashboard() {
               </div>
             </div>
             
+            ${b.status === "Approved" ? `
+              <div style="text-align: center; margin: 24px 0; border-top: 2px dashed #e2e8f0; padding-top: 24px;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${b.bookingId || b._id}" alt="Ticket QR Code" style="border: 2px solid #e2e8f0; padding: 10px; border-radius: 8px; background: #fff;" />
+                <p style="font-size: 0.8rem; color: #64748b; margin-top: 6px; font-family: monospace; font-weight: bold; letter-spacing: 1px;">TICKET QR CODE</p>
+              </div>
+            ` : `
+              <div style="text-align: center; margin: 24px 0; border-top: 2px dashed #e2e8f0; padding-top: 24px; color: #d97706; font-weight: bold; font-size: 0.9rem;">
+                Ticket Pending Verification. QR Code will be unlocked once approved.
+              </div>
+            `}
+            
             <p class="footer-note">
               Thank you for booking with Campus Hub. Please show this receipt along with your university ID at the event venue entrance.
             </p>
+            
+            <button class="print-btn" onclick="window.print()">Print / Save PDF</button>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const handleDownloadCertificate = (b) => {
+    const printWindow = window.open("", "_blank");
+    const certificateId = `CERT-${b._id.slice(-6).toUpperCase()}`;
+    const dateStr = b.eventDate || "TBA";
+    const collegeStr = b.studentCollegeName || "N/A";
+    
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Certificate of Participation - ${b.eventName}</title>
+          <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+          <style>
+            body {
+              font-family: 'Montserrat', sans-serif;
+              background: #f1f5f9;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+              margin: 0;
+              padding: 20px;
+            }
+            .certificate-container {
+              background: #fff;
+              border: 12px double #b45309;
+              border-radius: 4px;
+              padding: 60px 40px;
+              max-width: 800px;
+              width: 100%;
+              text-align: center;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+              position: relative;
+              color: #1e293b;
+            }
+            .certificate-container::before {
+              content: '';
+              position: absolute;
+              top: 10px; left: 10px; right: 10px; bottom: 10px;
+              border: 2px solid #b45309;
+              pointer-events: none;
+            }
+            .title {
+              font-family: 'Cinzel', serif;
+              font-size: 2.5rem;
+              font-weight: 800;
+              color: #b45309;
+              margin-bottom: 20px;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+            }
+            .subtitle {
+              font-size: 1.1rem;
+              text-transform: uppercase;
+              letter-spacing: 3px;
+              color: #64748b;
+              margin-bottom: 30px;
+              font-weight: 600;
+            }
+            .recipient-label {
+              font-size: 1.1rem;
+              font-style: italic;
+              color: #475569;
+              margin-bottom: 10px;
+            }
+            .recipient-name {
+              font-family: 'Cinzel', serif;
+              font-size: 2.2rem;
+              font-weight: 600;
+              color: #0f172a;
+              border-bottom: 2px solid #cbd5e1;
+              display: inline-block;
+              padding-bottom: 5px;
+              margin-bottom: 20px;
+              min-width: 300px;
+            }
+            .text {
+              font-size: 1.05rem;
+              line-height: 1.8;
+              color: #334155;
+              max-width: 600px;
+              margin: 0 auto 40px auto;
+            }
+            .event-highlight {
+              font-weight: 600;
+              color: #0f172a;
+            }
+            .footer-row {
+              display: flex;
+              justify-content: space-around;
+              align-items: flex-end;
+              margin-top: 50px;
+            }
+            .signature-block {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+            }
+            .signature-line {
+              border-top: 1px solid #94a3b8;
+              width: 180px;
+              margin-top: 10px;
+              padding-top: 5px;
+              font-size: 0.8rem;
+              color: #64748b;
+              text-transform: uppercase;
+              font-weight: 600;
+              letter-spacing: 1px;
+            }
+            .cert-id {
+              position: absolute;
+              bottom: 20px;
+              right: 30px;
+              font-family: monospace;
+              font-size: 0.75rem;
+              color: #94a3b8;
+            }
+            .print-btn {
+              position: fixed;
+              bottom: 20px;
+              right: 20px;
+              background: #b45309;
+              color: #fff;
+              border: none;
+              padding: 12px 24px;
+              border-radius: 8px;
+              font-size: 1rem;
+              font-weight: 600;
+              cursor: pointer;
+              box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+              transition: background 0.2s;
+            }
+            .print-btn:hover {
+              background: #92400e;
+            }
+            @media print {
+              body { background: #fff; padding: 0; }
+              .certificate-container { box-shadow: none; margin: 0; border: 6px double #b45309; }
+              .print-btn { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="certificate-container">
+            <h1 class="title">Certificate</h1>
+            <p class="subtitle">of Participation</p>
+            
+            <p class="recipient-label">This certificate is proudly presented to</p>
+            <h2 class="recipient-name">${b.studentName}</h2>
+            
+            <p class="text">
+              of <span class="event-highlight">${collegeStr}</span> for successfully attending and active participation in the event 
+              <br/>
+              <span class="event-highlight" style="font-size: 1.2rem; color: #b45309;">"${b.eventName}"</span>
+              <br/>
+              hosted by the club <span class="event-highlight">${b.clubId || 'Organizers'}</span> on <span class="event-highlight">${dateStr}</span>.
+            </p>
+            
+            <div class="footer-row">
+              <div class="signature-block">
+                <span style="font-family: cursive; font-size: 1.1rem; color: #475569;">Campus Hub Verified</span>
+                <div class="signature-line">Authorized Signatory</div>
+              </div>
+              <div class="signature-block">
+                <span style="font-family: cursive; font-size: 1.1rem; color: #475569;">Club Lead</span>
+                <div class="signature-line">Event Coordinator</div>
+              </div>
+            </div>
+            
+            <div class="cert-id">Verification Code: ${certificateId}</div>
             
             <button class="print-btn" onclick="window.print()">Print / Save PDF</button>
           </div>
@@ -390,23 +579,40 @@ function StudentDashboard() {
           ) : (
             <div>
               {getSortedBookings().map(b => (
-                <div key={b._id} style={{ background: "rgba(255,255,255,0.05)", padding: "15px", borderRadius: "8px", marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <h3 style={{ color: "var(--primary)" }}>{b.eventName}</h3>
-                    {b.bookingId && <p style={{ fontSize: "0.8rem", color: "var(--accent)", margin: "2px 0" }}>ID: {b.bookingId}</p>}
-                    <p style={{ fontSize: "0.9rem", color: "var(--text-muted)" }}>Status: <span style={{ color: b.status === "Approved" ? "var(--success)" : b.status === "Rejected" ? "var(--danger)" : "orange", fontWeight: "bold" }}>{b.status}</span></p>
+                <div key={b._id} style={{ background: "rgba(255,255,255,0.05)", padding: "18px", borderRadius: "12px", marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    {b.status === "Approved" && (
+                      <div style={{ background: "#fff", padding: "4px", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${b.bookingId || b._id}`} alt="Ticket QR" style={{ width: "70px", height: "70px" }} />
+                      </div>
+                    )}
+                    <div>
+                      <h3 style={{ color: "var(--primary)", margin: "0 0 6px 0" }}>{b.eventName}</h3>
+                      {b.bookingId && <p style={{ fontSize: "0.8rem", color: "var(--accent)", margin: "2px 0" }}>ID: {b.bookingId}</p>}
+                      <p style={{ fontSize: "0.9rem", color: "var(--text-muted)", margin: "2px 0" }}>Status: <span style={{ color: b.status === "Approved" ? "var(--success)" : b.status === "Rejected" ? "var(--danger)" : "orange", fontWeight: "bold" }}>{b.status}</span></p>
+                      {b.checkedIn && <p style={{ fontSize: "0.85rem", color: "var(--success)", margin: "4px 0 0 0", display: "flex", alignItems: "center", gap: "4px" }}><span>✅</span> Checked In</p>}
+                    </div>
                   </div>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+                    {b.status === "Approved" && b.checkedIn && (
+                      <button 
+                        className="btn-primary" 
+                        style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "0.85rem", background: "var(--accent)", color: "#000" }}
+                        onClick={() => handleDownloadCertificate(b)}
+                      >
+                        🎓 Certificate
+                      </button>
+                    )}
                     {b.status === "Approved" && (
                       <button 
                         className="btn-secondary" 
                         style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", fontSize: "0.85rem", background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)" }}
                         onClick={() => handleDownloadReceipt(b)}
                       >
-                        <FaDownload /> Receipt
+                        <FaDownload /> Ticket / Receipt
                       </button>
                     )}
-                    {(b.status === "Pending" || b.status === "Approved") && (
+                    {(b.status === "Pending" || b.status === "Approved") && !b.checkedIn && (
                       <button 
                         className="btn-primary" 
                         style={{ padding: "8px 14px", fontSize: "0.85rem", background: "var(--danger)", color: "#fff", width: "auto" }}

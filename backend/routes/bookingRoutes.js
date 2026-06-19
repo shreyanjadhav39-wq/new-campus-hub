@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const mongoose = require("mongoose");
 const Booking = require("../models/Booking");
 const Event = require("../models/Event");
 
@@ -160,6 +161,82 @@ router.get("/:id/screenshot", async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
     res.json({ screenshot: booking.screenshot });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /check-in (Check-in via QR code or direct ID)
+router.post("/check-in", async (req, res) => {
+  try {
+    const { bookingId } = req.body;
+    if (!bookingId) {
+      return res.status(400).json({ error: "bookingId is required" });
+    }
+
+    // Try finding by custom bookingId first, then Mongo ObjectId
+    let booking = await Booking.findOne({ bookingId });
+    if (!booking && mongoose.isValidObjectId(bookingId)) {
+      booking = await Booking.findById(bookingId);
+    }
+
+    if (!booking) {
+      return res.status(404).json({ error: "Ticket booking not found." });
+    }
+
+    if (booking.status !== "Approved") {
+      return res.status(400).json({ error: `Cannot check in. Ticket status is currently ${booking.status}. It must be Approved first.` });
+    }
+
+    if (booking.checkedIn) {
+      return res.status(400).json({ 
+        error: "Ticket already checked in!", 
+        alreadyCheckedIn: true,
+        booking: {
+          bookingId: booking.bookingId,
+          studentName: booking.studentName,
+          checkInTime: booking.checkInTime
+        }
+      });
+    }
+
+    booking.checkedIn = true;
+    booking.checkInTime = new Date();
+    await booking.save();
+
+    res.json({
+      success: true,
+      message: `Successfully checked in ${booking.studentName}!`,
+      booking: {
+        bookingId: booking.bookingId,
+        studentName: booking.studentName,
+        checkInTime: booking.checkInTime,
+        eventName: booking.eventName
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /:id/check-in (Manual check-in toggle from dashboard search)
+router.patch("/:id/check-in", async (req, res) => {
+  try {
+    const { checkedIn } = req.body;
+    const booking = await Booking.findById(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    if (booking.status !== "Approved" && checkedIn) {
+      return res.status(400).json({ error: "Cannot check in a ticket that is not Approved." });
+    }
+
+    booking.checkedIn = checkedIn;
+    booking.checkInTime = checkedIn ? new Date() : undefined;
+    await booking.save();
+
+    res.json(booking);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

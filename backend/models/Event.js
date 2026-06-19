@@ -4,6 +4,7 @@ const eventSchema = new mongoose.Schema({
   title: String,
   venue: String,
   date: String,
+  startTime: String,
   price: Number,
   seats: Number,
   seatsLeft: Number,
@@ -14,6 +15,8 @@ const eventSchema = new mongoose.Schema({
     type: String,
     default: "General"
   },
+  description: String,
+  bannerImage: String,
   paymentType: {
     type: String,
     default: "default"

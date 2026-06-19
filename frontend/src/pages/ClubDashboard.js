@@ -18,9 +18,12 @@ function ClubDashboard() {
   const [title, setTitle] = useState("");
   const [venue, setVenue] = useState("");
   const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("");
   const [price, setPrice] = useState("");
   const [seats, setSeats] = useState("");
   const [category, setCategory] = useState("General");
+  const [description, setDescription] = useState("");
+  const [bannerImage, setBannerImage] = useState("");
   const [paymentType, setPaymentType] = useState("default");
   const [paymentLink, setPaymentLink] = useState("");
   const [paymentQR, setPaymentQR] = useState("");
@@ -78,13 +81,15 @@ function ClubDashboard() {
     e.preventDefault();
     try {
       const payload = {
-        title, venue, date, 
+        title, venue, date, startTime,
         price: Number(price), 
         seats: Number(seats), 
         createdBy: user._id, 
         clubName: user.clubName,
         collegeName: user.collegeName || "",
         category,
+        description,
+        bannerImage,
         paymentType,
         paymentLink,
         paymentQR
@@ -95,9 +100,12 @@ function ClubDashboard() {
       setTitle("");
       setVenue("");
       setDate("");
+      setStartTime("");
       setPrice("");
       setSeats("");
       setCategory("General");
+      setDescription("");
+      setBannerImage("");
       setPaymentType("default");
       setPaymentLink("");
       setPaymentQR("");
@@ -115,9 +123,12 @@ function ClubDashboard() {
         title: editingEvent.title,
         venue: editingEvent.venue,
         date: editingEvent.date,
+        startTime: editingEvent.startTime || "",
         price: Number(editingEvent.price),
         seats: Number(editingEvent.seats),
         category: editingEvent.category,
+        description: editingEvent.description || "",
+        bannerImage: editingEvent.bannerImage || "",
         paymentType: editingEvent.paymentType || "default",
         paymentLink: editingEvent.paymentLink,
         paymentQR: editingEvent.paymentQR
@@ -211,9 +222,28 @@ function ClubDashboard() {
                 </div>
                 <div className="form-group"><label>Venue</label><input type="text" value={venue} onChange={e=>setVenue(e.target.value)} required /></div>
                 <div className="form-group"><label>Date (e.g., Oct 24, 2026)</label><input type="text" value={date} onChange={e=>setDate(e.target.value)} required /></div>
-                 <div className="form-group"><label>Price (₹)</label><input type="number" value={price} onChange={e=>setPrice(e.target.value)} required /></div>
+                <div className="form-group"><label>Start Time (e.g., 2:00 PM)</label><input type="text" value={startTime} onChange={e=>setStartTime(e.target.value)} placeholder="e.g. 2:00 PM" required /></div>
+                <div className="form-group"><label>Price (₹)</label><input type="number" value={price} onChange={e=>setPrice(e.target.value)} required /></div>
                 <div className="form-group"><label>Total Seats</label><input type="number" value={seats} onChange={e=>setSeats(e.target.value)} required /></div>
                 
+                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                  <label>Event Description</label>
+                  <textarea value={description} onChange={e=>setDescription(e.target.value)} placeholder="Provide a rich description of the event details, rules, speakers..." style={{ width: "100%", minHeight: "100px", padding: "12px 16px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none", fontFamily: "inherit" }} required />
+                </div>
+
+                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                  <label>Event Banner Image</label>
+                  <input type="file" accept="image/*" onChange={e => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onloadend = () => setBannerImage(reader.result);
+                    if (file) reader.readAsDataURL(file);
+                  }} />
+                  {bannerImage && (
+                    <img src={bannerImage} alt="Banner Preview" style={{ width: "100%", maxHeight: "180px", objectFit: "cover", marginTop: "10px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)" }} />
+                  )}
+                </div>
+
                 <div className="form-group">
                   <label>Payment Redirection</label>
                   <select value={paymentType} onChange={e=>setPaymentType(e.target.value)} required style={{ width: "100%", padding: "14px 16px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none" }}>
@@ -333,9 +363,28 @@ function ClubDashboard() {
                 </div>
                 <div className="form-group"><label>Venue</label><input type="text" value={editingEvent.venue} onChange={e=>setEditingEvent({...editingEvent, venue: e.target.value})} required /></div>
                 <div className="form-group"><label>Date (e.g., Oct 24, 2026)</label><input type="text" value={editingEvent.date} onChange={e=>setEditingEvent({...editingEvent, date: e.target.value})} required /></div>
-                 <div className="form-group"><label>Price (₹)</label><input type="number" value={editingEvent.price} onChange={e=>setEditingEvent({...editingEvent, price: e.target.value})} required /></div>
+                <div className="form-group"><label>Start Time (e.g., 2:00 PM)</label><input type="text" value={editingEvent.startTime || ""} onChange={e=>setEditingEvent({...editingEvent, startTime: e.target.value})} placeholder="e.g. 2:00 PM" required /></div>
+                <div className="form-group"><label>Price (₹)</label><input type="number" value={editingEvent.price} onChange={e=>setEditingEvent({...editingEvent, price: e.target.value})} required /></div>
                 <div className="form-group"><label>Total Seats</label><input type="number" value={editingEvent.seats} onChange={e=>setEditingEvent({...editingEvent, seats: e.target.value})} required /></div>
                 
+                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                  <label>Event Description</label>
+                  <textarea value={editingEvent.description || ""} onChange={e=>setEditingEvent({...editingEvent, description: e.target.value})} placeholder="Provide a rich description of the event details, rules, speakers..." style={{ width: "100%", minHeight: "100px", padding: "12px 16px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none", fontFamily: "inherit" }} required />
+                </div>
+
+                <div className="form-group" style={{ gridColumn: "1 / -1" }}>
+                  <label>Event Banner Image</label>
+                  <input type="file" accept="image/*" onChange={e => {
+                    const file = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onloadend = () => setEditingEvent({...editingEvent, bannerImage: reader.result});
+                    if (file) reader.readAsDataURL(file);
+                  }} />
+                  {editingEvent.bannerImage && (
+                    <img src={editingEvent.bannerImage} alt="Banner Preview" style={{ width: "100%", maxHeight: "180px", objectFit: "cover", marginTop: "10px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)" }} />
+                  )}
+                </div>
+
                 <div className="form-group">
                   <label>Payment Redirection</label>
                   <select value={editingEvent.paymentType || "default"} onChange={e=>setEditingEvent({...editingEvent, paymentType: e.target.value})} required style={{ width: "100%", padding: "14px 16px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none" }}>

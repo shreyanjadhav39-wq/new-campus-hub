@@ -146,28 +146,46 @@ function Home() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                style={{ textAlign: "left" }}
+                style={{ textAlign: "left", padding: "16px", display: "flex", flexDirection: "column" }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                {ev.bannerImage ? (
+                  <img src={ev.bannerImage} alt={ev.title} style={{ width: "100%", height: "140px", objectFit: "cover", borderRadius: "8px", marginBottom: "16px" }} />
+                ) : (
+                  <div style={{ width: "100%", height: "140px", background: "linear-gradient(135deg, #1e1b4b, #311042)", borderRadius: "8px", marginBottom: "16px", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    <FaCalendarCheck style={{ fontSize: "2.5rem", color: "var(--primary)", opacity: 0.6 }} />
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                   <span style={{ background: "rgba(99,102,241,0.2)", color: "var(--primary)", padding: "4px 12px", borderRadius: "20px", fontSize: "0.8rem", fontWeight: "bold" }}>
                     {ev.clubName}
                   </span>
-                  <span style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>{ev.date}</span>
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                    {ev.date} {ev.startTime && `| 🕒 ${ev.startTime}`}
+                  </span>
                 </div>
-                <h3>{ev.title}</h3>
+                <h3 style={{ margin: "0 0 8px 0" }}>{ev.title}</h3>
                 {ev.collegeName && <p style={{ marginBottom: "8px", color: "var(--accent)", fontSize: "0.9rem" }}>🏫 {ev.collegeName}</p>}
-                <p style={{ marginBottom: "8px" }}><strong>Venue:</strong> {ev.venue}</p>
-                <p style={{ marginBottom: "8px" }}><strong>Price:</strong> ₹{ev.price}</p>
-                <p style={{ marginBottom: "20px" }}><strong>Seats Left:</strong> {ev.seatsLeft}/{ev.seats}</p>
                 
-                <button 
-                  className="btn-primary" 
-                  style={{ width: "100%" }}
-                  onClick={() => handleBook(ev)}
-                  disabled={ev.seatsLeft === 0}
-                >
-                  <FaTicketAlt /> {ev.seatsLeft === 0 ? "Sold Out" : "Book Now"}
-                </button>
+                {ev.description && (
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "12px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", textOverflow: "ellipsis", height: "36px", lineHeight: "1.5" }}>
+                    {ev.description}
+                  </p>
+                )}
+                
+                <div style={{ marginTop: "auto" }}>
+                  <p style={{ marginBottom: "6px", fontSize: "0.9rem" }}><strong>Venue:</strong> {ev.venue}</p>
+                  <p style={{ marginBottom: "6px", fontSize: "0.9rem" }}><strong>Price:</strong> ₹{ev.price}</p>
+                  <p style={{ marginBottom: "16px", fontSize: "0.9rem" }}><strong>Seats Left:</strong> {ev.seatsLeft}/{ev.seats}</p>
+                  
+                  <button 
+                    className="btn-primary" 
+                    style={{ width: "100%" }}
+                    onClick={() => handleBook(ev)}
+                    disabled={ev.seatsLeft === 0}
+                  >
+                    <FaTicketAlt /> {ev.seatsLeft === 0 ? "Sold Out" : "Book Now"}
+                  </button>
+                </div>
               </motion.div>
             ))
           )}
