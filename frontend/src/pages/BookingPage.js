@@ -16,7 +16,7 @@ function BookingPage() {
   const [studentCollegeName, setStudentCollegeName] = useState("");
 
   useEffect(() => {
-    const selected = JSON.parse(localStorage.getItem("selectedEvent"));
+    const selected = JSON.parse(sessionStorage.getItem("selectedEvent"));
     if (!selected) {
       toast.error("No event selected. Please choose an event from the home page.");
       navigate("/");
@@ -24,7 +24,7 @@ function BookingPage() {
       setEvent(selected);
     }
 
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
     if (currentUser) {
       setEmail(currentUser.email || "");
       setMobile(currentUser.mobileNumber || "");
@@ -49,7 +49,7 @@ function BookingPage() {
       toast.error("Please upload payment screenshot.");
       return;
     }
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
     if (!currentUser) {
       toast.error("Please login first");
       return;
@@ -105,13 +105,32 @@ function BookingPage() {
             <p style={{ fontSize: "1.1rem", marginBottom: "8px" }}><strong>Seats Left:</strong> {event.seatsLeft !== undefined ? event.seatsLeft : event.seats}</p>
           </div>
           
-          <button 
-            className="btn-primary" 
-            onClick={() => window.open("https://vierp.in", "_blank")}
-            style={{ width: "100%", padding: "16px", marginTop: "10px" }}
-          >
-            <FaMoneyCheckAlt /> Pay via VIERP
-          </button>
+          {event.paymentType === "link" ? (
+            <button 
+              className="btn-primary" 
+              onClick={() => window.open(event.paymentLink, "_blank")}
+              style={{ width: "100%", padding: "16px", marginTop: "10px" }}
+            >
+              <FaMoneyCheckAlt /> Pay via Custom Link
+            </button>
+          ) : event.paymentType === "qr" ? (
+            <div style={{ marginTop: "15px", textAlign: "center", background: "rgba(255,255,255,0.03)", padding: "15px", borderRadius: "10px", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <p style={{ marginBottom: "10px", fontSize: "0.95rem", fontWeight: "bold", color: "var(--accent)" }}>Scan QR Code to Pay</p>
+              {event.paymentQR ? (
+                <img src={event.paymentQR} alt="Payment QR" style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.1)", margin: "0 auto" }} />
+              ) : (
+                <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>No QR Code image uploaded by club.</p>
+              )}
+            </div>
+          ) : (
+            <button 
+              className="btn-primary" 
+              onClick={() => window.open("https://vierp.in", "_blank")}
+              style={{ width: "100%", padding: "16px", marginTop: "10px" }}
+            >
+              <FaMoneyCheckAlt /> Pay via VIERP
+            </button>
+          )}
         </div>
 
         <div className="dashboard-panel glass-panel">

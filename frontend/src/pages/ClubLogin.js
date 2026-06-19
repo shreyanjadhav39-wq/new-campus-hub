@@ -16,8 +16,8 @@ function ClubLogin() {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });
       if (res.data.user.role === "club") {
-        localStorage.setItem("currentUser", JSON.stringify(res.data.user));
-        localStorage.setItem("token", res.data.token);
+        sessionStorage.setItem("currentUser", JSON.stringify(res.data.user));
+        sessionStorage.setItem("token", res.data.token);
         navigate("/club-dashboard");
       } else {
         alert("This portal is for club representatives only");

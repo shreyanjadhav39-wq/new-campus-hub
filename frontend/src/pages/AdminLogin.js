@@ -13,7 +13,7 @@ function AdminLogin() {
   const handleLogin = (e) => {
     e.preventDefault();
     if (username === "teamcampushub" && password === "csaif3") {
-      localStorage.setItem("currentUser", JSON.stringify({ role: "admin", email: username }));
+      sessionStorage.setItem("currentUser", JSON.stringify({ role: "admin", email: username }));
       toast.success("Welcome back, Administrator!");
       navigate("/admin-dashboard");
     } else {

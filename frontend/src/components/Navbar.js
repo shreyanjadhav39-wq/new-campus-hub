@@ -1,6 +1,8 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { FaGraduationCap, FaBars, FaTimes } from "react-icons/fa";
+import axios from "axios";
+import { API_BASE_URL } from "../config";
 import "../styles/navbar.css";
 
 function Navbar() {
@@ -19,13 +21,18 @@ function Navbar() {
   }, []);
 
   useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
     setUser(currentUser);
   }, [location]);
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("token");
+    // Notify server of logout
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+    if (currentUser && currentUser._id) {
+      axios.post(`${API_BASE_URL}/api/auth/logout-status`, { userId: currentUser._id }).catch(err => console.error(err));
+    }
+    sessionStorage.removeItem("currentUser");
+    sessionStorage.removeItem("token");
     setUser(null);
     setMobileMenuOpen(false);
     navigate("/");

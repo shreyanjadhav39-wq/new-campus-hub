@@ -46,7 +46,7 @@ function StudentDashboard() {
   };
 
   useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
     if (!currentUser || currentUser.role !== "student") {
       navigate("/student-login");
     } else {
@@ -281,7 +281,7 @@ function StudentDashboard() {
       try {
         await axios.delete(`${API_BASE_URL}/api/bookings/${bookingId}`);
         toast.success("Booking cancelled successfully.");
-        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+        const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
         if (currentUser) {
           fetchBookings(currentUser._id);
         }
@@ -293,13 +293,17 @@ function StudentDashboard() {
   };
 
   const handleBookEvent = (event) => {
-    localStorage.setItem("selectedEvent", JSON.stringify(event));
+    sessionStorage.setItem("selectedEvent", JSON.stringify(event));
     navigate("/booking");
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("token");
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+    if (currentUser && currentUser._id) {
+      axios.post(`${API_BASE_URL}/api/auth/logout-status`, { userId: currentUser._id }).catch(err => console.error(err));
+    }
+    sessionStorage.removeItem("currentUser");
+    sessionStorage.removeItem("token");
     navigate("/");
   };
 

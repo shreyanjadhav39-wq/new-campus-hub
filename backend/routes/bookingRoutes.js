@@ -6,7 +6,7 @@ const Event = require("../models/Event");
 // GET all bookings (admin overview)
 router.get("/", async (req, res) => {
   try {
-    const bookings = await Booking.find();
+    const bookings = await Booking.find().select("-screenshot");
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -78,7 +78,7 @@ router.post("/", async (req, res) => {
 // GET bookings for a specific student
 router.get("/student/:studentId", async (req, res) => {
   try {
-    const bookings = await Booking.find({ studentId: req.params.studentId });
+    const bookings = await Booking.find({ studentId: req.params.studentId }).select("-screenshot");
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -88,7 +88,7 @@ router.get("/student/:studentId", async (req, res) => {
 // GET bookings for a specific club
 router.get("/club/:clubId", async (req, res) => {
   try {
-    const bookings = await Booking.find({ clubId: req.params.clubId });
+    const bookings = await Booking.find({ clubId: req.params.clubId }).select("-screenshot");
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -98,7 +98,7 @@ router.get("/club/:clubId", async (req, res) => {
 // GET bookings for a specific event
 router.get("/event/:eventId", async (req, res) => {
   try {
-    const bookings = await Booking.find({ eventId: req.params.eventId });
+    const bookings = await Booking.find({ eventId: req.params.eventId }).select("-screenshot");
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -147,6 +147,19 @@ router.delete("/:id", async (req, res) => {
 
     await Booking.findByIdAndDelete(req.params.id);
     res.json({ message: "Booking deleted/cancelled successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET screenshot for a specific booking
+router.get("/:id/screenshot", async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id, "screenshot");
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+    res.json({ screenshot: booking.screenshot });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

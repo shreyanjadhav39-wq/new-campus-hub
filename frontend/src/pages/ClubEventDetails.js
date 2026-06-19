@@ -17,7 +17,7 @@ function ClubEventDetails() {
   const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
     if (!currentUser || currentUser.role !== "club") {
       navigate("/club-login");
       return;
@@ -47,6 +47,17 @@ function ClubEventDetails() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyProof = async (booking) => {
+    setSelectedBooking({ ...booking, loadingScreenshot: true });
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/bookings/${booking._id}/screenshot`);
+      setSelectedBooking({ ...booking, screenshot: res.data.screenshot, loadingScreenshot: false });
+    } catch (err) {
+      toast.error("Failed to load payment screenshot");
+      setSelectedBooking(null);
     }
   };
 
@@ -262,7 +273,7 @@ function ClubEventDetails() {
                     </td>
                     <td style={{ padding: "12px 8px", textAlign: "right" }}>
                       <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                        <button className="btn-secondary" style={{ padding: "6px 10px", fontSize: "0.75rem", width: "auto" }} onClick={() => setSelectedBooking(b)}>
+                        <button className="btn-secondary" style={{ padding: "6px 10px", fontSize: "0.75rem", width: "auto" }} onClick={() => handleVerifyProof(b)}>
                           Verify Proof
                         </button>
                         <button 
@@ -294,7 +305,11 @@ function ClubEventDetails() {
             <p style={{ margin: "6px 0" }}><strong>Status:</strong> <span style={{ color: selectedBooking.status === "Approved" ? "var(--success)" : selectedBooking.status === "Rejected" ? "var(--danger)" : "orange", fontWeight: "bold" }}>{selectedBooking.status}</span></p>
             
             <div style={{ background: "#000", borderRadius: "8px", overflow: "hidden", display: "flex", justifyContent: "center", alignItems: "center", height: "250px", margin: "16px 0", border: "1px solid rgba(255,255,255,0.1)" }}>
-              <img src={selectedBooking.screenshot} alt="Payment Proof" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+              {selectedBooking.loadingScreenshot ? (
+                <div style={{ border: "3px solid rgba(255,255,255,0.1)", borderLeftColor: "var(--accent)", borderRadius: "50%", width: "30px", height: "30px", animation: "spin 1s linear infinite" }}></div>
+              ) : (
+                <img src={selectedBooking.screenshot} alt="Payment Proof" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+              )}
             </div>
             
             <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>

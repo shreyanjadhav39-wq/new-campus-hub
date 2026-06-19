@@ -13,7 +13,13 @@ const eventSchema = new mongoose.Schema({
   category: {
     type: String,
     default: "General"
-  }
+  },
+  paymentType: {
+    type: String,
+    default: "default"
+  },
+  paymentLink: String,
+  paymentQR: String
 });
 
 module.exports = mongoose.model("Event", eventSchema);

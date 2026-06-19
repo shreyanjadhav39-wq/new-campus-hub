@@ -11,7 +11,15 @@ const userSchema = new mongoose.Schema({
   clubName: String,
   collegeName: String,
   rollNumber: String,
-  mobileNumber: String
+  mobileNumber: String,
+  lastActive: {
+    type: Date,
+    default: Date.now
+  },
+  isOnline: {
+    type: Boolean,
+    default: false
+  }
 });
 
 module.exports = mongoose.model("User", userSchema);

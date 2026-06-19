@@ -21,11 +21,14 @@ function ClubDashboard() {
   const [price, setPrice] = useState("");
   const [seats, setSeats] = useState("");
   const [category, setCategory] = useState("General");
+  const [paymentType, setPaymentType] = useState("default");
+  const [paymentLink, setPaymentLink] = useState("");
+  const [paymentQR, setPaymentQR] = useState("");
   const [prediction, setPrediction] = useState(null);
   const [loadingPrediction, setLoadingPrediction] = useState(false);
 
   useEffect(() => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
     if (!currentUser || currentUser.role !== "club") {
       navigate("/club-login");
     } else {
@@ -81,7 +84,10 @@ function ClubDashboard() {
         createdBy: user._id, 
         clubName: user.clubName,
         collegeName: user.collegeName || "",
-        category
+        category,
+        paymentType,
+        paymentLink,
+        paymentQR
       };
       await axios.post(`${API_BASE_URL}/api/events`, payload);
       toast.success("Event created successfully!");
@@ -92,6 +98,9 @@ function ClubDashboard() {
       setPrice("");
       setSeats("");
       setCategory("General");
+      setPaymentType("default");
+      setPaymentLink("");
+      setPaymentQR("");
       setPrediction(null);
       fetchEvents(user.clubName);
     } catch (err) {
@@ -108,7 +117,10 @@ function ClubDashboard() {
         date: editingEvent.date,
         price: Number(editingEvent.price),
         seats: Number(editingEvent.seats),
-        category: editingEvent.category
+        category: editingEvent.category,
+        paymentType: editingEvent.paymentType || "default",
+        paymentLink: editingEvent.paymentLink,
+        paymentQR: editingEvent.paymentQR
       };
       await axios.put(`${API_BASE_URL}/api/events/${editingEvent._id}`, payload);
       toast.success("Event updated successfully!");
@@ -134,8 +146,12 @@ function ClubDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("token");
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+    if (currentUser && currentUser._id) {
+      axios.post(`${API_BASE_URL}/api/auth/logout-status`, { userId: currentUser._id }).catch(err => console.error(err));
+    }
+    sessionStorage.removeItem("currentUser");
+    sessionStorage.removeItem("token");
     navigate("/");
   };
 
@@ -195,9 +211,39 @@ function ClubDashboard() {
                 </div>
                 <div className="form-group"><label>Venue</label><input type="text" value={venue} onChange={e=>setVenue(e.target.value)} required /></div>
                 <div className="form-group"><label>Date (e.g., Oct 24, 2026)</label><input type="text" value={date} onChange={e=>setDate(e.target.value)} required /></div>
-                <div className="form-group"><label>Price (₹)</label><input type="number" value={price} onChange={e=>setPrice(e.target.value)} required /></div>
+                 <div className="form-group"><label>Price (₹)</label><input type="number" value={price} onChange={e=>setPrice(e.target.value)} required /></div>
                 <div className="form-group"><label>Total Seats</label><input type="number" value={seats} onChange={e=>setSeats(e.target.value)} required /></div>
-                <button type="submit" className="btn-primary" style={{ width: "100%" }}>Create Event</button>
+                
+                <div className="form-group">
+                  <label>Payment Redirection</label>
+                  <select value={paymentType} onChange={e=>setPaymentType(e.target.value)} required style={{ width: "100%", padding: "14px 16px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none" }}>
+                    <option value="default">Default (VIERP)</option>
+                    <option value="link">Custom Payment Link</option>
+                    <option value="qr">QR Code Image</option>
+                  </select>
+                </div>
+                {paymentType === "link" && (
+                  <div className="form-group">
+                    <label>Custom Payment Link URL</label>
+                    <input type="url" value={paymentLink} onChange={e=>setPaymentLink(e.target.value)} required placeholder="https://example.com/pay" />
+                  </div>
+                )}
+                {paymentType === "qr" && (
+                  <div className="form-group">
+                    <label>Upload Payment QR Image</label>
+                    <input type="file" accept="image/*" onChange={e => {
+                      const file = e.target.files[0];
+                      const reader = new FileReader();
+                      reader.onloadend = () => setPaymentQR(reader.result);
+                      if (file) reader.readAsDataURL(file);
+                    }} required={!paymentQR} />
+                    {paymentQR && (
+                      <img src={paymentQR} alt="QR Preview" style={{ maxWidth: "150px", marginTop: "10px", borderRadius: "6px" }} />
+                    )}
+                  </div>
+                )}
+
+                <button type="submit" className="btn-primary" style={{ width: "100%", gridColumn: "1 / -1", marginTop: "10px" }}>Create Event</button>
               </form>
 
               <div className="glass-panel" style={{ padding: "20px", display: "flex", flexDirection: "column", border: "1px solid rgba(255,255,255,0.08)", height: "fit-content" }}>
@@ -287,8 +333,37 @@ function ClubDashboard() {
                 </div>
                 <div className="form-group"><label>Venue</label><input type="text" value={editingEvent.venue} onChange={e=>setEditingEvent({...editingEvent, venue: e.target.value})} required /></div>
                 <div className="form-group"><label>Date (e.g., Oct 24, 2026)</label><input type="text" value={editingEvent.date} onChange={e=>setEditingEvent({...editingEvent, date: e.target.value})} required /></div>
-                <div className="form-group"><label>Price (₹)</label><input type="number" value={editingEvent.price} onChange={e=>setEditingEvent({...editingEvent, price: e.target.value})} required /></div>
+                 <div className="form-group"><label>Price (₹)</label><input type="number" value={editingEvent.price} onChange={e=>setEditingEvent({...editingEvent, price: e.target.value})} required /></div>
                 <div className="form-group"><label>Total Seats</label><input type="number" value={editingEvent.seats} onChange={e=>setEditingEvent({...editingEvent, seats: e.target.value})} required /></div>
+                
+                <div className="form-group">
+                  <label>Payment Redirection</label>
+                  <select value={editingEvent.paymentType || "default"} onChange={e=>setEditingEvent({...editingEvent, paymentType: e.target.value})} required style={{ width: "100%", padding: "14px 16px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "var(--text-main)", outline: "none" }}>
+                    <option value="default">Default (VIERP)</option>
+                    <option value="link">Custom Payment Link</option>
+                    <option value="qr">QR Code Image</option>
+                  </select>
+                </div>
+                {(editingEvent.paymentType === "link") && (
+                  <div className="form-group">
+                    <label>Custom Payment Link URL</label>
+                    <input type="url" value={editingEvent.paymentLink || ""} onChange={e=>setEditingEvent({...editingEvent, paymentLink: e.target.value})} required placeholder="https://example.com/pay" />
+                  </div>
+                )}
+                {(editingEvent.paymentType === "qr") && (
+                  <div className="form-group">
+                    <label>Upload Payment QR Image</label>
+                    <input type="file" accept="image/*" onChange={e => {
+                      const file = e.target.files[0];
+                      const reader = new FileReader();
+                      reader.onloadend = () => setEditingEvent({...editingEvent, paymentQR: reader.result});
+                      if (file) reader.readAsDataURL(file);
+                    }} />
+                    {editingEvent.paymentQR && (
+                      <img src={editingEvent.paymentQR} alt="QR Preview" style={{ maxWidth: "150px", marginTop: "10px", borderRadius: "6px" }} />
+                    )}
+                  </div>
+                )}
                 
                 <div style={{ gridColumn: "1 / -1", display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "10px" }}>
                   <button type="button" className="btn-secondary" style={{ width: "auto", padding: "12px 24px" }} onClick={() => setEditingEvent(null)}>Cancel</button>

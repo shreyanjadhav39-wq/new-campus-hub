@@ -41,10 +41,10 @@ function Home() {
   };
 
   const handleBook = (event) => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+    const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
     if (!currentUser) {
       toast.error("Please login as a student to book events.");
-      localStorage.setItem("selectedEvent", JSON.stringify(event));
+      sessionStorage.setItem("selectedEvent", JSON.stringify(event));
       navigate("/student-login");
       return;
     }
@@ -52,7 +52,7 @@ function Home() {
       toast.error("Only student accounts can book event tickets.");
       return;
     }
-    localStorage.setItem("selectedEvent", JSON.stringify(event));
+    sessionStorage.setItem("selectedEvent", JSON.stringify(event));
     navigate("/booking");
   };
 

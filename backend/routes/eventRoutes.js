@@ -26,7 +26,7 @@ router.get("/club/:clubName", async (req, res) => {
 // POST a new event
 router.post("/", async (req, res) => {
   try {
-    const { title, venue, date, price, seats, createdBy, clubName, collegeName, category } = req.body;
+    const { title, venue, date, price, seats, createdBy, clubName, collegeName, category, paymentType, paymentLink, paymentQR } = req.body;
     
     const newEvent = new Event({
       title,
@@ -38,7 +38,10 @@ router.post("/", async (req, res) => {
       createdBy,
       clubName,
       collegeName,
-      category: category || "General"
+      category: category || "General",
+      paymentType: paymentType || "default",
+      paymentLink,
+      paymentQR
     });
 
     const savedEvent = await newEvent.save();
@@ -51,7 +54,7 @@ router.post("/", async (req, res) => {
 // PUT update an event
 router.put("/:id", async (req, res) => {
   try {
-    const { title, venue, date, price, seats, category } = req.body;
+    const { title, venue, date, price, seats, category, paymentType, paymentLink, paymentQR } = req.body;
     const event = await Event.findById(req.params.id);
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
@@ -69,6 +72,9 @@ router.put("/:id", async (req, res) => {
     event.date = date || event.date;
     event.price = price !== undefined ? Number(price) : event.price;
     event.category = category || event.category;
+    event.paymentType = paymentType || event.paymentType;
+    event.paymentLink = paymentLink !== undefined ? paymentLink : event.paymentLink;
+    event.paymentQR = paymentQR !== undefined ? paymentQR : event.paymentQR;
 
     const updatedEvent = await event.save();
     res.json(updatedEvent);
