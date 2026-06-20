@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useEffect } from "react";
 import axios from "axios";
@@ -57,7 +57,7 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Toaster position="top-right" toastOptions={{ duration: 4000, style: { background: "#1e293b", color: "#f8fafc", border: "1px solid rgba(255,255,255,0.08)" } }} />
       <div className="page-container">
         <Navbar />
@@ -98,7 +98,7 @@ function App() {
         </main>
         <Footer />
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

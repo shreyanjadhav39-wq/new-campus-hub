@@ -118,6 +118,19 @@ router.get("/users", async (req, res) => {
   }
 });
 
+// GET single user profile
+router.get("/users/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id, "-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE a user
 router.delete("/users/:id", async (req, res) => {
   try {

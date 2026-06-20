@@ -53,6 +53,21 @@ function StudentDashboard() {
       setUser(currentUser);
       fetchBookings(currentUser._id);
       fetchRecommendations(currentUser._id);
+
+      // Fetch fresh user details to handle updates on refresh
+      axios.get(`${API_BASE_URL}/api/auth/users/${currentUser._id}`)
+        .then(res => {
+          sessionStorage.setItem("currentUser", JSON.stringify(res.data));
+          setUser(res.data);
+        })
+        .catch(err => console.error("Failed to fetch fresh user details", err));
+
+      // Poll for bookings in real-time every 5 seconds
+      const pollInterval = setInterval(() => {
+        fetchBookings(currentUser._id);
+      }, 5000);
+
+      return () => clearInterval(pollInterval);
     }
   }, [navigate]);
 

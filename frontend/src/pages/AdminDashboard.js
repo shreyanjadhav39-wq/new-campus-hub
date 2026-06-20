@@ -75,6 +75,11 @@ function AdminDashboard() {
         fetchAnalyticsOnly();
       }, 15000);
 
+      // Poll all dashboard workspace data in real-time every 5 seconds silently
+      const pollInterval = setInterval(() => {
+        fetchDataSilently();
+      }, 5000);
+
       // Simulate live heap memory fluctuation
       const memoryInterval = setInterval(() => {
         setHeapMemory(prev => Math.max(45, Math.min(220, parseFloat((prev + (Math.random() * 6 - 3)).toFixed(1)))));
@@ -92,6 +97,7 @@ function AdminDashboard() {
 
       return () => {
         clearInterval(interval);
+        clearInterval(pollInterval);
         clearInterval(memoryInterval);
         clearInterval(uptimeInterval);
       };
@@ -124,6 +130,25 @@ function AdminDashboard() {
     } catch (err) {
       console.error(err);
       toast.error("Failed to load admin workspace data");
+    }
+  };
+
+  const fetchDataSilently = async () => {
+    const startFetch = Date.now();
+    try {
+      const [usersRes, eventsRes, bookingsRes, statsRes] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/auth/users`),
+        axios.get(`${API_BASE_URL}/api/events`),
+        axios.get(`${API_BASE_URL}/api/bookings`),
+        axios.get(`${API_BASE_URL}/api/auth/stats`)
+      ]);
+      setUsersList(usersRes.data);
+      setEventsList(eventsRes.data);
+      setBookingsList(bookingsRes.data);
+      setAnalyticsStats(statsRes.data);
+      setServerLatency(Date.now() - startFetch);
+    } catch (err) {
+      console.error("Silent data fetch failed:", err);
     }
   };
 

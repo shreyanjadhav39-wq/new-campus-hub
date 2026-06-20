@@ -29,6 +29,12 @@ function ClubEventDetails() {
       return;
     }
     fetchDetails();
+
+    const pollInterval = setInterval(() => {
+      fetchDetailsSilently();
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate]);
 
@@ -86,15 +92,16 @@ function ClubEventDetails() {
     }
   };
 
-  const fetchDetails = async () => {
-    setLoading(true);
+  const fetchDetailsData = async (showError = false) => {
     try {
       // Fetch Event details
       const eventsRes = await axios.get(`${API_BASE_URL}/api/events`);
       const currentEvent = eventsRes.data.find(e => e._id === id);
       if (!currentEvent) {
-        toast.error("Event not found");
-        navigate("/club-dashboard");
+        if (showError) {
+          toast.error("Event not found");
+          navigate("/club-dashboard");
+        }
         return;
       }
       setEvent(currentEvent);
@@ -103,11 +110,21 @@ function ClubEventDetails() {
       const bookingsRes = await axios.get(`${API_BASE_URL}/api/bookings/event/${id}`);
       setBookings(bookingsRes.data);
     } catch (err) {
-      toast.error("Failed to load event details");
+      if (showError) {
+        toast.error("Failed to load event details");
+      }
       console.error(err);
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const fetchDetails = async () => {
+    setLoading(true);
+    await fetchDetailsData(true);
+    setLoading(false);
+  };
+
+  const fetchDetailsSilently = async () => {
+    await fetchDetailsData(false);
   };
 
   const handleVerifyProof = async (booking) => {

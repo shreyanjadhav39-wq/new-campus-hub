@@ -1,4 +1,6 @@
 const express = require("express");
+const path = require("path");
+const fs = require("fs");
 
 const mongoose = require("mongoose");
 
@@ -35,11 +37,20 @@ mongoose
   });
 
 
-app.get("/", (req, res) => {
-
-  res.send("Campus Hub Backend Running 🚀");
-
-});
+const buildPath = path.join(__dirname, "../frontend/build");
+if (fs.existsSync(buildPath)) {
+  app.use(express.static(buildPath));
+  app.get("*", (req, res) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).json({ error: "API route not found" });
+    }
+    res.sendFile(path.join(buildPath, "index.html"));
+  });
+} else {
+  app.get("/", (req, res) => {
+    res.send("Campus Hub Backend Running 🚀");
+  });
+}
 
 
 const PORT =

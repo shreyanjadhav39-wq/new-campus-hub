@@ -24,6 +24,9 @@ function Home() {
       }
     };
     fetchEvents();
+
+    const pollInterval = setInterval(fetchEvents, 10000);
+    return () => clearInterval(pollInterval);
   }, []);
 
   const uniqueColleges = Array.from(

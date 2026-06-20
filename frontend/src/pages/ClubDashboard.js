@@ -37,6 +37,27 @@ function ClubDashboard() {
     } else {
       setUser(currentUser);
       fetchEvents(currentUser.clubName);
+
+      // Fetch fresh user details to handle updates on refresh
+      axios.get(`${API_BASE_URL}/api/auth/users/${currentUser._id}`)
+        .then(res => {
+          sessionStorage.setItem("currentUser", JSON.stringify(res.data));
+          setUser(res.data);
+          // If the clubName changed, we re-fetch events for the updated name
+          if (res.data.clubName !== currentUser.clubName) {
+            fetchEvents(res.data.clubName);
+          }
+        })
+        .catch(err => console.error("Failed to fetch fresh user details", err));
+
+      // Poll for events in real-time every 5 seconds
+      const pollInterval = setInterval(() => {
+        // Use latest user clubName if available
+        const latestUser = JSON.parse(sessionStorage.getItem("currentUser")) || currentUser;
+        fetchEvents(latestUser.clubName);
+      }, 5000);
+
+      return () => clearInterval(pollInterval);
     }
   }, [navigate]);
 

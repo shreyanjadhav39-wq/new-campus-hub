@@ -30,6 +30,17 @@ function BookingPage() {
       setMobile(currentUser.mobileNumber || "");
       setRollNumber(currentUser.rollNumber || "");
       setStudentCollegeName(currentUser.collegeName || "");
+
+      // Fetch fresh user details to handle updates on refresh
+      axios.get(`${API_BASE_URL}/api/auth/users/${currentUser._id}`)
+        .then(res => {
+          sessionStorage.setItem("currentUser", JSON.stringify(res.data));
+          setEmail(res.data.email || "");
+          setMobile(res.data.mobileNumber || "");
+          setRollNumber(res.data.rollNumber || "");
+          setStudentCollegeName(res.data.collegeName || "");
+        })
+        .catch(err => console.error("Failed to fetch fresh user details", err));
     }
   }, [navigate]);
 
